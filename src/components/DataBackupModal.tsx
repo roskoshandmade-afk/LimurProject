@@ -1,12 +1,15 @@
 import React, { useRef, useState } from 'react';
-import { Download, Upload, Trash2, RotateCcw, X } from 'lucide-react';
+import { Download, Upload, Trash2, RotateCcw, X, Settings2 } from 'lucide-react';
 import { AppData } from '../types';
 import { exportDataToJson, parseImportedJson } from '../utils/storage';
+import { SyncStatus } from '../utils/supabaseSync';
 
 interface DataBackupModalProps {
   open: boolean;
   data: AppData;
+  syncStatus: SyncStatus;
   onClose: () => void;
+  onOpenSupabaseSettings: () => void;
   onImport: (imported: AppData) => void;
   onResetEmpty: () => void;
   onRestoreDemo: () => void;
@@ -16,7 +19,9 @@ interface DataBackupModalProps {
 export const DataBackupModal: React.FC<DataBackupModalProps> = ({
   open,
   data,
+  syncStatus,
   onClose,
+  onOpenSupabaseSettings,
   onImport,
   onResetEmpty,
   onRestoreDemo,
@@ -123,6 +128,46 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
               onChange={handleFileChange}
               className="hidden"
             />
+          </div>
+
+          <div className="border-t border-[#D4D4D4] pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-medium text-[#0A0A0A]">
+                  <span>Облачная синхронизация Supabase</span>
+                  <span
+                    className={`inline-flex items-center gap-1 font-mono text-[11px] font-semibold ${
+                      syncStatus === 'online' || syncStatus === 'syncing'
+                        ? 'text-[#15803D]'
+                        : 'text-[#DC2626]'
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 ${
+                        syncStatus === 'online' || syncStatus === 'syncing'
+                          ? 'bg-[#15803D]'
+                          : 'bg-[#DC2626]'
+                      }`}
+                    />
+                    {syncStatus === 'online' || syncStatus === 'syncing' ? 'Онлайн' : 'Офлайн'}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] text-[#525252]">
+                  Задайте Project URL и Anon Key или проверьте соединение с базой
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenSupabaseSettings();
+                }}
+                className="flex min-h-[36px] items-center gap-1.5 border border-[#0A0A0A] bg-white px-3 text-xs font-medium text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white whitespace-nowrap"
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+                Настройки Supabase
+              </button>
+            </div>
           </div>
 
           <div className="border-t border-[#D4D4D4] pt-4">

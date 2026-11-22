@@ -31,8 +31,8 @@ jobs:
 
       - name: Build Vite application
         env:
-          VITE_SUPABASE_URL: https://iufvrdvwrcwyfokdvpeb.supabase.co
-          VITE_SUPABASE_ANON_KEY: sb_publishable_7lVcUR1YgUpediExSLBa1w_beRAcd4f
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL || 'https://iufvrdvwrcwyfokdvpeb.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY || 'sb_publishable_7lVcUR1YgUpediExSLBa1w_beRAcd4f' }}
         run: npm run build
 
       - name: Prepare GitHub Pages artifacts

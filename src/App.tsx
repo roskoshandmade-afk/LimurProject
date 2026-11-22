@@ -6,6 +6,7 @@ import { Header, WorkspaceTab } from './components/Header';
 import { ProjectDetailView } from './components/ProjectDetailView';
 import { ProjectModal } from './components/ProjectModal';
 import { StudioPulseView } from './components/StudioPulseView';
+import { SupabaseSettingsModal } from './components/SupabaseSettingsModal';
 import { TeamView } from './components/TeamView';
 import { Toast, ToastMessage } from './components/Toast';
 import { WorklogSection } from './components/WorklogSection';
@@ -31,8 +32,10 @@ import {
 import { exportProjectFinancialPdf } from './utils/exportProjectPdf';
 import {
   fetchStudioState,
+  RealtimeStatus,
   saveStudioStateRemote,
   subscribeStudioState,
+  SupabaseSyncError,
   SyncStatus,
 } from './utils/supabaseSync';
 
@@ -41,6 +44,9 @@ export default function App() {
 
   const [data, setData] = useState<AppData>(() => loadAppData());
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('connecting');
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('idle');
+  const [lastSyncError, setLastSyncError] = useState<SupabaseSyncError | null>(null);
+  const [syncGeneration, setSyncGeneration] = useState(0);
   const [role, setRole] = useState<UserRole>(
     urlClientState.isLockedClient ? 'client' : 'director'
   );
@@ -51,14 +57,17 @@ export default function App() {
 
   // Sync guards to prevent redundant write-backs on remote updates
   const isHydratedRef = useRef(false);
+  const restConnectedRef = useRef(false);
   const lastSyncedJsonRef = useRef<string>('');
   const saveTimerRef = useRef<number | null>(null);
-  const initialDataRef = useRef<AppData>(data);
+  const latestDataRef = useRef<AppData>(data);
+  latestDataRef.current = data;
 
   // Modals & notifications
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [backupModalOpen, setBackupModalOpen] = useState(false);
+  const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -87,6 +96,7 @@ export default function App() {
   // 1. Initial hydration from Supabase `studio_state` (id = 'main') + Realtime subscription
   useEffect(() => {
     let active = true;
+    restConnectedRef.current = false;
 
     const initSync = async () => {
       setSyncStatus('connecting');
@@ -94,24 +104,30 @@ export default function App() {
       if (!active) return;
 
       if (!res.ok) {
-        // Offline / unreachable fallback — keep localStorage state active
+        // Offline / unreachable fallback — keep localStorage state active & preserve exact error
         isHydratedRef.current = true;
+        restConnectedRef.current = false;
+        setLastSyncError(res.error || null);
         setSyncStatus('offline');
         return;
       }
+
+      setLastSyncError(null);
 
       if (res.data) {
         const remoteJson = JSON.stringify(res.data);
         lastSyncedJsonRef.current = remoteJson;
         isHydratedRef.current = true;
+        restConnectedRef.current = true;
         setData(res.data);
         saveAppData(res.data);
         setSyncStatus('online');
       } else {
-        // `payload` is empty in Supabase — seed with initial data (unless read-only client view)
-        const seedData = initialDataRef.current;
+        // `payload` is empty in Supabase — seed with current local data (unless read-only client view)
+        const seedData = latestDataRef.current;
         if (urlClientState.isLockedClient) {
           isHydratedRef.current = true;
+          restConnectedRef.current = true;
           setSyncStatus('online');
         } else {
           setSyncStatus('syncing');
@@ -119,8 +135,12 @@ export default function App() {
           if (!active) return;
           if (seedRes.ok) {
             lastSyncedJsonRef.current = JSON.stringify(seedData);
+            restConnectedRef.current = true;
+            setLastSyncError(null);
             setSyncStatus('online');
           } else {
+            restConnectedRef.current = false;
+            setLastSyncError(seedRes.error || null);
             setSyncStatus('offline');
           }
           isHydratedRef.current = true;
@@ -131,6 +151,7 @@ export default function App() {
     void initSync();
 
     // Subscribe to realtime updates on `studio_state` (`id=eq.main`)
+    // Note: Realtime WebSocket errors do NOT override a healthy REST connection to 'offline'.
     const unsubscribe = subscribeStudioState(
       (remoteData) => {
         if (!active) return;
@@ -139,16 +160,18 @@ export default function App() {
           return;
         }
         lastSyncedJsonRef.current = remoteJson;
+        restConnectedRef.current = true;
         saveAppData(remoteData);
         setData(remoteData);
+        setLastSyncError(null);
         setSyncStatus('online');
       },
-      (connected) => {
+      (rtStatus) => {
         if (!active) return;
-        setSyncStatus((curr) => {
-          if (curr === 'syncing') return curr;
-          return connected ? 'online' : 'offline';
-        });
+        setRealtimeStatus(rtStatus);
+        if (rtStatus === 'subscribed' && restConnectedRef.current) {
+          setSyncStatus((curr) => (curr === 'syncing' ? curr : 'online'));
+        }
       }
     );
 
@@ -159,7 +182,7 @@ export default function App() {
         window.clearTimeout(saveTimerRef.current);
       }
     };
-  }, [urlClientState.isLockedClient]);
+  }, [urlClientState.isLockedClient, syncGeneration]);
 
   // 2. Persist locally immediately & sync any local mutation to Supabase `studio_state` (`id = 'main'`)
   useEffect(() => {
@@ -183,8 +206,12 @@ export default function App() {
       const res = await saveStudioStateRemote(data);
       if (res.ok) {
         lastSyncedJsonRef.current = serialized;
+        restConnectedRef.current = true;
+        setLastSyncError(null);
         setSyncStatus('online');
       } else {
+        restConnectedRef.current = false;
+        setLastSyncError(res.error || null);
         setSyncStatus('offline');
       }
     }, 220);
@@ -423,6 +450,7 @@ export default function App() {
         selectedProjectName={selectedProject?.name}
         canCopyClientLink={data.projects.length > 0}
         syncStatus={syncStatus}
+        syncErrorHint={lastSyncError?.humanHint}
         onRoleChange={(nextRole) => {
           setRole(nextRole);
           if (nextRole === 'client' && !selectedProjectId && data.projects[0]) {
@@ -441,6 +469,7 @@ export default function App() {
         }}
         onCopyClientLink={() => handleCopyClientLink()}
         onOpenBackup={() => setBackupModalOpen(true)}
+        onOpenSupabaseSettings={() => setSupabaseModalOpen(true)}
         onGoHome={() => {
           if (role !== 'client') {
             setActiveTab('projects');
@@ -552,7 +581,9 @@ export default function App() {
       <DataBackupModal
         open={backupModalOpen}
         data={data}
+        syncStatus={syncStatus}
         onClose={() => setBackupModalOpen(false)}
+        onOpenSupabaseSettings={() => setSupabaseModalOpen(true)}
         onImport={(imported) => {
           setData(imported);
           setSelectedProjectId(null);
@@ -565,6 +596,16 @@ export default function App() {
           setData(createDemoData());
           setSelectedProjectId(null);
         }}
+        onNotify={notify}
+      />
+
+      <SupabaseSettingsModal
+        open={supabaseModalOpen}
+        syncStatus={syncStatus}
+        realtimeStatus={realtimeStatus}
+        lastSyncError={lastSyncError}
+        onClose={() => setSupabaseModalOpen(false)}
+        onConfigApplied={() => setSyncGeneration((g) => g + 1)}
         onNotify={notify}
       />
 

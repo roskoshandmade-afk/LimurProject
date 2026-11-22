@@ -11,11 +11,13 @@ interface HeaderProps {
   selectedProjectName?: string;
   canCopyClientLink: boolean;
   syncStatus: SyncStatus;
+  syncErrorHint?: string;
   onRoleChange: (role: UserRole) => void;
   onTabChange: (tab: WorkspaceTab) => void;
   onOpenNewProject: () => void;
   onCopyClientLink: () => void;
   onOpenBackup: () => void;
+  onOpenSupabaseSettings: () => void;
   onGoHome: () => void;
 }
 
@@ -25,7 +27,11 @@ const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
   { value: 'client', label: 'Клиент' },
 ];
 
-export const SyncIndicator: React.FC<{ status: SyncStatus }> = ({ status }) => {
+export const SyncIndicator: React.FC<{
+  status: SyncStatus;
+  errorHint?: string;
+  onClick?: () => void;
+}> = ({ status, errorHint, onClick }) => {
   const dotClass =
     status === 'online'
       ? 'bg-[#15803D]'
@@ -44,18 +50,37 @@ export const SyncIndicator: React.FC<{ status: SyncStatus }> = ({ status }) => {
       ? 'Подключение...'
       : 'Офлайн';
 
+  const title =
+    status === 'online'
+      ? 'Синхронизация с Supabase активна · Нажмите для настроек'
+      : status === 'syncing'
+      ? 'Сохранение изменений в Supabase'
+      : status === 'offline'
+      ? `${errorHint || 'Нет связи с Supabase, изменения сохранены локально'} · Нажмите для настройки`
+      : 'Подключение к Supabase...';
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 ${
+          status === 'offline'
+            ? 'border-[#DC2626] bg-[#FEF2F2] text-[#DC2626] hover:bg-[#DC2626] hover:text-white'
+            : 'border-transparent text-[#525252] hover:border-[#0A0A0A] hover:text-[#0A0A0A]'
+        }`}
+        title={title}
+      >
+        <span className={`h-2 w-2 rounded-none ${dotClass}`} aria-hidden="true" />
+        <span>{label}</span>
+      </button>
+    );
+  }
+
   return (
     <span
       className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#525252] whitespace-nowrap shrink-0"
-      title={
-        status === 'online'
-          ? 'Синхронизация в реальном времени активна'
-          : status === 'syncing'
-          ? 'Сохранение изменений в облако'
-          : status === 'offline'
-          ? 'Нет связи с сервером, изменения сохранены локально'
-          : 'Подключение к серверу синхронизации'
-      }
+      title={title}
     >
       <span className={`h-2 w-2 rounded-none ${dotClass}`} aria-hidden="true" />
       <span>{label}</span>
@@ -68,11 +93,13 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   canCopyClientLink,
   syncStatus,
+  syncErrorHint,
   onRoleChange,
   onTabChange,
   onOpenNewProject,
   onCopyClientLink,
   onOpenBackup,
+  onOpenSupabaseSettings,
   onGoHome,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -91,7 +118,11 @@ export const Header: React.FC<HeaderProps> = ({
             LIMUR STUDIO OS
           </button>
           <span className="h-3.5 w-px bg-[#D4D4D4]" aria-hidden="true" />
-          <SyncIndicator status={syncStatus} />
+          <SyncIndicator
+            status={syncStatus}
+            errorHint={syncErrorHint}
+            onClick={role !== 'client' ? onOpenSupabaseSettings : undefined}
+          />
         </div>
 
         {/* Zone 2: Primary Navigation (Desktop, hidden for Client role) */}
