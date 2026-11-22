@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { ExternalLink, FileText, FolderOpen, Ruler } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { ExternalLink, FileDown, FileText, FolderOpen, Ruler } from 'lucide-react';
 import { Project } from '../types';
 import { ClientSnapshot } from '../utils/storage';
 import { SyncStatus } from '../utils/supabaseSync';
@@ -16,6 +16,7 @@ interface ClientViewProps {
   isLockedClient: boolean;
   syncStatus?: SyncStatus;
   onSelectPreviewProject?: (projectId: string) => void;
+  onExportPdf?: (project: Project | ClientSnapshot) => Promise<void>;
 }
 
 function normalizeUrl(url: string): string {
@@ -30,7 +31,20 @@ export const ClientView: React.FC<ClientViewProps> = ({
   isLockedClient,
   syncStatus,
   onSelectPreviewProject,
+  onExportPdf,
 }) => {
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const handleExportPdfClick = async () => {
+    if (!project || !onExportPdf || exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      await onExportPdf(project);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   const financials = useMemo(() => {
     if (!project) return { total: 0, paid: 0, remaining: 0, paidPct: 0 };
     const total = project.paymentStages.reduce((acc, s) => acc + (Number(s.amount) || 0), 0);
@@ -64,23 +78,23 @@ export const ClientView: React.FC<ClientViewProps> = ({
   }, [project]);
 
   return (
-    <div className="min-h-screen bg-[#F7F7F6]">
-      {/* Minimal locked client top line (no role switcher) */}
+    <div className="min-h-screen bg-white text-[#0A0A0A]">
+      {/* Minimal locked client top line (no role switcher, no other projects) */}
       {isLockedClient && (
-        <header className="border-b border-[#E5E5E5] bg-white">
+        <header className="border-b border-[#0A0A0A] bg-white">
           <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3.5">
-              <span className="text-sm font-semibold tracking-[0.16em] text-[#0F0F0F]">
+              <span className="text-sm font-bold tracking-[0.18em] text-[#0A0A0A]">
                 LIMUR STUDIO
               </span>
               {syncStatus && (
                 <>
-                  <span className="h-3.5 w-px bg-[#E5E5E5]" aria-hidden="true" />
+                  <span className="h-3.5 w-px bg-[#D4D4D4]" aria-hidden="true" />
                   <SyncIndicator status={syncStatus} />
                 </>
               )}
             </div>
-            <span className="text-xs text-[#525252]">Кабинет проекта</span>
+            <span className="text-xs font-medium text-[#525252]">Кабинет проекта</span>
           </div>
         </header>
       )}
@@ -88,12 +102,12 @@ export const ClientView: React.FC<ClientViewProps> = ({
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         {/* Preview Project Selector (only when testing via Role Switcher, NEVER in locked client URL) */}
         {!isLockedClient && allProjects.length > 1 && onSelectPreviewProject && project && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border border-[#E5E5E5] bg-white px-4 py-3 text-xs">
-            <span className="text-[#525252]">Предпросмотр экрана клиента для объекта:</span>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border border-[#0A0A0A] bg-[#F4F4F4] px-4 py-3 text-xs">
+            <span className="font-medium text-[#525252]">Предпросмотр экрана клиента для объекта:</span>
             <select
               value={project.id}
               onChange={(e) => onSelectPreviewProject(e.target.value)}
-              className="h-8 border border-[#D4D4D4] bg-white px-2.5 text-xs font-medium text-[#0F0F0F]"
+              className="h-8 border border-[#0A0A0A] bg-white px-2.5 text-xs font-semibold text-[#0A0A0A]"
             >
               {allProjects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -105,8 +119,8 @@ export const ClientView: React.FC<ClientViewProps> = ({
         )}
 
         {!project ? (
-          <div className="border border-[#E5E5E5] bg-white px-6 py-16 text-center">
-            <h1 className="text-lg font-semibold text-[#0F0F0F]">Проект не найден</h1>
+          <div className="border border-[#0A0A0A] bg-white px-6 py-16 text-center">
+            <h1 className="text-lg font-bold text-[#0A0A0A]">Проект не найден</h1>
             <p className="mt-2 text-xs text-[#525252]">
               Проверьте корректность ссылки или обратитесь в студию для получения актуальной ссылки на объект.
             </p>
@@ -114,47 +128,65 @@ export const ClientView: React.FC<ClientViewProps> = ({
         ) : (
           <div className="space-y-8">
             {/* Project Hero Header */}
-            <section className="border border-[#E5E5E5] border-t-2 border-t-[#0F0F0F] bg-white p-6 sm:p-8">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-[#6B6B68]">
-                <span className="font-medium text-[#0F0F0F]">{project.status}</span>
-                <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums text-[#0F0F0F]">{project.areaSqm} м²</span>
-                {project.address && (
-                  <>
+            <section className="border border-[#0A0A0A] border-t-4 border-t-[#0A0A0A] bg-white p-6 sm:p-8">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-[#525252]">
+                    <span className="font-semibold text-[#0A0A0A]">{project.status}</span>
                     <span aria-hidden="true">·</span>
-                    <span>{project.address}</span>
-                  </>
+                    <span className="font-mono font-semibold tabular-nums text-[#0A0A0A]">
+                      {project.areaSqm} м²
+                    </span>
+                    {project.address && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{project.address}</span>
+                      </>
+                    )}
+                  </div>
+
+                  <h1 className="mt-3 text-2xl font-bold tracking-tight text-[#0A0A0A] sm:text-4xl [text-wrap:balance]">
+                    {project.name}
+                  </h1>
+                </div>
+
+                {onExportPdf && (
+                  <button
+                    type="button"
+                    disabled={exportingPdf}
+                    onClick={handleExportPdfClick}
+                    className="flex h-10 shrink-0 items-center justify-center gap-2 self-start bg-[#0A0A0A] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#262626] disabled:opacity-60 whitespace-nowrap"
+                  >
+                    <FileDown className="h-3.5 w-3.5" />
+                    {exportingPdf ? 'Формирование PDF...' : 'Скачать PDF-отчёт'}
+                  </button>
                 )}
               </div>
-
-              <h1 className="mt-3 text-2xl font-semibold tracking-tight text-[#0F0F0F] sm:text-4xl [text-wrap:balance]">
-                {project.name}
-              </h1>
 
               {/* Overall Readiness Bar */}
               <div className="mt-6">
                 <div className="flex items-baseline justify-between text-xs">
-                  <span className="text-[#6B6B68]">Общая готовность дизайн-проекта</span>
-                  <span className="font-mono text-base font-semibold tabular-nums text-[#0F0F0F]">
+                  <span className="text-[#525252]">Общая готовность дизайн-проекта</span>
+                  <span className="font-mono text-base font-bold tabular-nums text-[#0A0A0A]">
                     {overallProgress}%
                   </span>
                 </div>
-                <div className="mt-2 h-2 w-full bg-[#ECECE9]">
+                <div className="mt-2 h-2 w-full bg-[#F4F4F4]">
                   <div
-                    className="h-full bg-[#0F0F0F]"
+                    className={`h-full ${overallProgress === 100 ? 'bg-[#15803D]' : 'bg-[#0A0A0A]'}`}
                     style={{ width: `${overallProgress}%` }}
                   />
                 </div>
               </div>
 
               {/* Quick Material & Document Links */}
-              <div className="mt-7 grid grid-cols-1 gap-3 border-t border-[#E5E5E2] pt-6 sm:grid-cols-3">
+              <div className="mt-7 grid grid-cols-1 gap-3 border-t border-[#D4D4D4] pt-6 sm:grid-cols-3">
                 {project.links.proposalUrl ? (
                   <a
                     href={normalizeUrl(project.links.proposalUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex min-h-[48px] items-center justify-between bg-[#0F0F0F] px-4 py-3 text-xs font-medium text-white transition-colors hover:bg-[#2A2A2A]"
+                    className="flex min-h-[48px] items-center justify-between bg-[#0A0A0A] px-4 py-3 text-xs font-semibold text-white transition-colors hover:bg-[#262626]"
                   >
                     <span className="flex items-center gap-2.5">
                       <FileText className="h-4 w-4" />
@@ -163,7 +195,7 @@ export const ClientView: React.FC<ClientViewProps> = ({
                     <ExternalLink className="h-3.5 w-3.5 opacity-75" />
                   </a>
                 ) : (
-                  <div className="flex min-h-[48px] items-center gap-2.5 border border-[#E5E5E2] bg-[#FAF9F8] px-4 py-3 text-xs text-[#8A8A86]">
+                  <div className="flex min-h-[48px] items-center gap-2.5 border border-[#D4D4D4] bg-[#F4F4F4] px-4 py-3 text-xs text-[#737373]">
                     <FileText className="h-4 w-4" />
                     КП скоро будет добавлено
                   </div>
@@ -174,16 +206,16 @@ export const ClientView: React.FC<ClientViewProps> = ({
                     href={normalizeUrl(project.links.measurementUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex min-h-[48px] items-center justify-between border border-[#0F0F0F] bg-white px-4 py-3 text-xs font-medium text-[#0F0F0F] transition-colors hover:bg-[#F6F6F5]"
+                    className="flex min-h-[48px] items-center justify-between border border-[#0A0A0A] bg-white px-4 py-3 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white"
                   >
                     <span className="flex items-center gap-2.5">
                       <Ruler className="h-4 w-4" />
                       Обмерный план
                     </span>
-                    <ExternalLink className="h-3.5 w-3.5 text-[#6B6B68]" />
+                    <ExternalLink className="h-3.5 w-3.5 opacity-70" />
                   </a>
                 ) : (
-                  <div className="flex min-h-[48px] items-center gap-2.5 border border-[#E5E5E2] bg-[#FAF9F8] px-4 py-3 text-xs text-[#8A8A86]">
+                  <div className="flex min-h-[48px] items-center gap-2.5 border border-[#D4D4D4] bg-[#F4F4F4] px-4 py-3 text-xs text-[#737373]">
                     <Ruler className="h-4 w-4" />
                     Обмерный план в подготовке
                   </div>
@@ -194,16 +226,16 @@ export const ClientView: React.FC<ClientViewProps> = ({
                     href={normalizeUrl(project.links.folderUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex min-h-[48px] items-center justify-between border border-[#0F0F0F] bg-white px-4 py-3 text-xs font-medium text-[#0F0F0F] transition-colors hover:bg-[#F6F6F5]"
+                    className="flex min-h-[48px] items-center justify-between border border-[#0A0A0A] bg-white px-4 py-3 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white"
                   >
                     <span className="flex items-center gap-2.5">
                       <FolderOpen className="h-4 w-4" />
                       Папка с материалами
                     </span>
-                    <ExternalLink className="h-3.5 w-3.5 text-[#6B6B68]" />
+                    <ExternalLink className="h-3.5 w-3.5 opacity-70" />
                   </a>
                 ) : (
-                  <div className="flex min-h-[48px] items-center gap-2.5 border border-[#E5E5E2] bg-[#FAF9F8] px-4 py-3 text-xs text-[#8A8A86]">
+                  <div className="flex min-h-[48px] items-center gap-2.5 border border-[#D4D4D4] bg-[#F4F4F4] px-4 py-3 text-xs text-[#737373]">
                     <FolderOpen className="h-4 w-4" />
                     Папка материалов не прикреплена
                   </div>
@@ -211,32 +243,32 @@ export const ClientView: React.FC<ClientViewProps> = ({
               </div>
             </section>
 
-            {/* Transparent Payment Schedule */}
-            <section className="border border-[#E5E5E2] bg-white">
-              <div className="border-b border-[#E5E5E2] px-6 py-5">
-                <h2 className="text-base font-semibold tracking-tight text-[#0F0F0F]">
+            {/* Transparent Payment Schedule with Inverse #0A0A0A Summary Bar */}
+            <section className="border border-[#0A0A0A] bg-white">
+              <div className="border-b border-[#0A0A0A] px-6 py-5">
+                <h2 className="text-base font-bold tracking-tight text-[#0A0A0A]">
                   График платежей по КП
                 </h2>
               </div>
 
-              <div className="grid grid-cols-1 gap-px border-b border-[#E5E5E2] bg-[#E5E5E2] sm:grid-cols-3">
-                <div className="bg-[#FAF9F8] px-6 py-4">
-                  <div className="text-xs text-[#6B6B68]">Стоимость проекта</div>
-                  <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#0F0F0F]">
+              <div className="grid grid-cols-1 gap-px border-b border-[#0A0A0A] bg-[#262626] sm:grid-cols-3">
+                <div className="bg-[#0A0A0A] px-6 py-5 text-white">
+                  <div className="text-xs text-[#A3A3A3]">Стоимость проекта</div>
+                  <div className="mt-1.5 font-mono text-xl font-bold tabular-nums text-white">
                     {formatCurrency(financials.total)}
                   </div>
                 </div>
-                <div className="bg-[#FAF9F8] px-6 py-4">
-                  <div className="text-xs text-[#6B6B68]">Оплачено ({financials.paidPct}%)</div>
-                  <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#15803D]">
+                <div className="bg-[#0A0A0A] px-6 py-5 text-white">
+                  <div className="text-xs text-[#A3A3A3]">Оплачено ({financials.paidPct}%)</div>
+                  <div className="mt-1.5 font-mono text-xl font-bold tabular-nums text-[#4ADE80]">
                     {formatCurrency(financials.paid)}
                   </div>
                 </div>
-                <div className="bg-[#FAF9F8] px-6 py-4">
-                  <div className="text-xs text-[#6B6B68]">Остаток к оплате</div>
+                <div className="bg-[#0A0A0A] px-6 py-5 text-white">
+                  <div className="text-xs text-[#A3A3A3]">Остаток к оплате</div>
                   <div
-                    className={`mt-1 font-mono text-xl font-semibold tabular-nums ${
-                      financials.remaining > 0 ? 'text-[#B91C1C]' : 'text-[#15803D]'
+                    className={`mt-1.5 font-mono text-xl font-bold tabular-nums ${
+                      financials.remaining > 0 ? 'text-[#F87171]' : 'text-[#4ADE80]'
                     }`}
                   >
                     {formatCurrency(financials.remaining)}
@@ -244,27 +276,27 @@ export const ClientView: React.FC<ClientViewProps> = ({
                 </div>
               </div>
 
-              <div className="divide-y divide-[#EFEFEC]">
+              <div className="divide-y divide-[#D4D4D4]">
                 {project.paymentStages.map((ps) => (
                   <div
                     key={ps.id}
                     className="flex flex-col justify-between gap-2 px-6 py-4 sm:flex-row sm:items-center"
                   >
                     <div>
-                      <div className="text-sm font-medium text-[#0F0F0F]">{ps.title}</div>
-                      <div className="mt-0.5 font-mono text-xs tabular-nums text-[#6B6B68]">
+                      <div className="text-sm font-semibold text-[#0A0A0A]">{ps.title}</div>
+                      <div className="mt-0.5 font-mono text-xs tabular-nums text-[#525252]">
                         {ps.isPaid
                           ? `Оплачено ${formatDate(ps.paidDate)}`
                           : `Плановый срок: ${formatDate(ps.dueDate)}`}
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-6 sm:justify-end">
-                      <span className="font-mono text-sm font-semibold tabular-nums text-[#0F0F0F]">
+                      <span className="font-mono text-sm font-bold tabular-nums text-[#0A0A0A]">
                         {formatCurrency(ps.amount)}
                       </span>
                       <span
-                        className={`w-24 text-right text-xs font-semibold ${
-                          ps.isPaid ? 'text-[#15803D]' : 'text-[#B91C1C]'
+                        className={`w-24 text-right text-xs font-bold ${
+                          ps.isPaid ? 'text-[#15803D]' : 'text-[#DC2626]'
                         }`}
                       >
                         {ps.isPaid ? 'Оплачено' : 'Ожидается'}
@@ -276,25 +308,25 @@ export const ClientView: React.FC<ClientViewProps> = ({
             </section>
 
             {/* Simplified Work Progress & Timeline (No Internal Notes or Staff Info) */}
-            <section className="border border-[#E5E5E2] bg-white">
-              <div className="border-b border-[#E5E5E2] px-6 py-5">
-                <h2 className="text-base font-semibold tracking-tight text-[#0F0F0F]">
+            <section className="border border-[#0A0A0A] bg-white">
+              <div className="border-b border-[#0A0A0A] px-6 py-5">
+                <h2 className="text-base font-bold tracking-tight text-[#0A0A0A]">
                   Этапы работ и график выполнения
                 </h2>
               </div>
 
-              <div className="divide-y divide-[#E5E5E2]">
+              <div className="divide-y divide-[#D4D4D4]">
                 {groupedWork.map(({ stage, tasks, progress }) => (
                   <div key={stage.id} className="p-6">
                     <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                      <h3 className="text-sm font-semibold text-[#0F0F0F]">{stage.title}</h3>
-                      <span className="font-mono text-xs font-semibold tabular-nums text-[#0F0F0F]">
+                      <h3 className="text-sm font-bold text-[#0A0A0A]">{stage.title}</h3>
+                      <span className="font-mono text-xs font-bold tabular-nums text-[#0A0A0A]">
                         Готовность этапа: {progress}%
                       </span>
                     </div>
 
                     {tasks.length === 0 ? (
-                      <p className="mt-3 text-xs text-[#8A8A86]">Подэтапы формируются.</p>
+                      <p className="mt-3 text-xs text-[#737373]">Подэтапы формируются.</p>
                     ) : (
                       <div className="mt-4 space-y-4">
                         {tasks.map((task) => {
@@ -311,32 +343,32 @@ export const ClientView: React.FC<ClientViewProps> = ({
                             task.progress === 100
                               ? 'text-[#15803D]'
                               : task.delayReason === 'client'
-                              ? 'text-[#B45309]'
-                              : 'text-[#52524F]';
+                              ? 'text-[#D97706]'
+                              : 'text-[#525252]';
 
                           return (
                             <div key={task.id} className="space-y-1.5">
                               <div className="flex flex-col justify-between gap-1 text-xs sm:flex-row sm:items-center">
-                                <span className="font-medium text-[#0F0F0F]">{task.title}</span>
+                                <span className="font-semibold text-[#0A0A0A]">{task.title}</span>
                                 <div className="flex items-center gap-2.5 text-[11px]">
-                                  <span className="font-mono tabular-nums text-[#6B6B68]">
+                                  <span className="font-mono tabular-nums text-[#525252]">
                                     {formatShortDate(task.planStart)} — {formatShortDate(task.planEnd)}
                                   </span>
-                                  <span className="text-[#CFCFCC]">·</span>
-                                  <span className={`font-medium ${statusColor}`}>{statusText}</span>
-                                  <span className="font-mono font-semibold tabular-nums text-[#0F0F0F]">
+                                  <span className="text-[#D4D4D4]">·</span>
+                                  <span className={`font-semibold ${statusColor}`}>{statusText}</span>
+                                  <span className="font-mono font-bold tabular-nums text-[#0A0A0A]">
                                     {task.progress}%
                                   </span>
                                 </div>
                               </div>
-                              <div className="h-1.5 w-full bg-[#ECECE9]">
+                              <div className="h-1.5 w-full bg-[#F4F4F4]">
                                 <div
                                   className={`h-full ${
                                     task.progress === 100
                                       ? 'bg-[#15803D]'
                                       : task.delayReason === 'client'
                                       ? 'bg-[#D97706]'
-                                      : 'bg-[#0F0F0F]'
+                                      : 'bg-[#0A0A0A]'
                                   }`}
                                   style={{ width: `${task.progress}%` }}
                                 />

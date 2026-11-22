@@ -306,16 +306,16 @@ export const GanttChart: React.FC<GanttChartProps> = ({
     }
 
     const tailColorClass =
-      task.delayReason === 'client' ? 'bg-[#B45309]' : 'bg-[#B91C1C]';
+      task.delayReason === 'client' ? 'bg-[#D97706]' : 'bg-[#DC2626]';
 
     const mainFillColorClass =
       task.progress === 100 && !hasOverrun
         ? 'bg-[#15803D]'
         : task.delayReason === 'studio'
-        ? 'bg-[#B91C1C]'
+        ? 'bg-[#DC2626]'
         : task.delayReason === 'client'
-        ? 'bg-[#B45309]'
-        : 'bg-[#0F0F0F]';
+        ? 'bg-[#D97706]'
+        : 'bg-[#0A0A0A]';
 
     return {
       planLeft,
@@ -334,12 +334,12 @@ export const GanttChart: React.FC<GanttChartProps> = ({
   };
 
   return (
-    <section aria-label="Диаграмма Ганта План vs Факт" className="border border-[#E5E5E5] bg-white">
+    <section aria-label="Диаграмма Ганта План vs Факт" className="border border-[#0A0A0A] bg-white">
       {/* Header Toolbar */}
-      <div className="flex flex-col justify-between gap-4 border-b border-[#E5E5E5] px-5 py-5 lg:flex-row lg:items-center">
+      <div className="flex flex-col justify-between gap-4 border-b border-[#0A0A0A] px-5 py-5 lg:flex-row lg:items-center">
         <div>
-          <div className="text-[11px] text-[#737373]">Производственный график</div>
-          <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-[#0F0F0F]">
+          <div className="text-[11px] text-[#525252]">Производственный график</div>
+          <h2 className="mt-0.5 text-lg font-bold tracking-tight text-[#0A0A0A]">
             Диаграмма Ганта · План vs Факт
           </h2>
         </div>
@@ -347,17 +347,17 @@ export const GanttChart: React.FC<GanttChartProps> = ({
         <div className="flex flex-wrap items-center gap-3">
           {/* View Mode Toggle: Gantt vs Compact Timeline (ideal for mobile) */}
           <div
-            className="flex items-center border border-[#E5E5E5] bg-[#F7F7F6] p-0.5"
+            className="flex items-center border border-[#0A0A0A] bg-[#F4F4F4] p-0.5"
             role="group"
             aria-label="Режим отображения графика"
           >
             <button
               type="button"
               onClick={() => setDisplayMode('gantt')}
-              className={`flex h-8 items-center gap-1.5 px-3 text-xs font-medium transition-colors whitespace-nowrap ${
+              className={`flex h-8 items-center gap-1.5 px-3 text-xs font-semibold transition-colors whitespace-nowrap ${
                 displayMode === 'gantt'
-                  ? 'bg-[#0F0F0F] text-white'
-                  : 'text-[#525252] hover:text-[#0F0F0F]'
+                  ? 'bg-[#0A0A0A] text-white'
+                  : 'text-[#525252] hover:text-[#0A0A0A]'
               }`}
             >
               <CalendarRange className="h-3.5 w-3.5" />
@@ -366,10 +366,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({
             <button
               type="button"
               onClick={() => setDisplayMode('timeline')}
-              className={`flex h-8 items-center gap-1.5 px-3 text-xs font-medium transition-colors whitespace-nowrap ${
+              className={`flex h-8 items-center gap-1.5 px-3 text-xs font-semibold transition-colors whitespace-nowrap ${
                 displayMode === 'timeline'
-                  ? 'bg-[#0F0F0F] text-white'
-                  : 'text-[#525252] hover:text-[#0F0F0F]'
+                  ? 'bg-[#0A0A0A] text-white'
+                  : 'text-[#525252] hover:text-[#0A0A0A]'
               }`}
             >
               <ListTree className="h-3.5 w-3.5" />
@@ -381,7 +381,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
             <button
               type="button"
               onClick={() => openAddTask(project.paymentStages[0].id)}
-              className="flex h-9 items-center gap-1.5 bg-[#0F0F0F] px-3.5 text-xs font-medium text-white transition-colors hover:bg-[#262626] whitespace-nowrap shrink-0"
+              className="flex h-9 items-center gap-1.5 bg-[#0A0A0A] px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#262626] whitespace-nowrap shrink-0"
             >
               <Plus className="h-3.5 w-3.5" />
               Подэтап
@@ -391,30 +391,30 @@ export const GanttChart: React.FC<GanttChartProps> = ({
       </div>
 
       {/* Architectural Legend Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E5E5] bg-[#F7F7F6] px-5 py-2.5 text-[11px] text-[#525252]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#0A0A0A] bg-[#F4F4F4] px-5 py-2.5 text-[11px] text-[#0A0A0A]">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
           <span className="flex items-center gap-1.5">
-            <span className="gantt-plan-hatch inline-block h-2.5 w-6 border border-dashed border-[#8A8A8A]" />
+            <span className="gantt-plan-hatch inline-block h-3 w-6 border border-[#0A0A0A]" />
             План по графику
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-6 bg-[#0F0F0F]" />
+            <span className="inline-block h-3 w-6 bg-[#0A0A0A]" />
             Факт (в работе)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-6 bg-[#15803D]" />
-            Выполнено в срок
+            <span className="inline-block h-3 w-6 bg-[#15803D]" />
+            Выполнено в срок (100%)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-6 bg-[#B45309]" />
-            Перерасход · ожидание клиента
+            <span className="inline-block h-3 w-6 bg-[#D97706]" />
+            Ожидание клиента
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-6 bg-[#B91C1C]" />
-            Перерасход · задержка студии
+            <span className="inline-block h-3 w-6 bg-[#DC2626]" />
+            Задержка (+N дн.)
           </span>
         </div>
-        <span className="font-mono text-[11px] tabular-nums text-[#0F0F0F]">
+        <span className="font-mono text-[11px] font-bold tabular-nums text-[#0A0A0A]">
           Сегодня · {formatShortDate(todayIso)}
         </span>
       </div>
@@ -428,13 +428,13 @@ export const GanttChart: React.FC<GanttChartProps> = ({
         <div className="overflow-x-auto">
           <div style={{ minWidth: `${320 + calendar.timelineWidthPx}px` }}>
             {/* Calendar Header Row */}
-            <div className="flex border-b border-[#E5E5E5] bg-[#F7F7F6]">
+            <div className="flex border-b border-[#0A0A0A] bg-[#F4F4F4]">
               {/* Sticky Left Column Header */}
-              <div className="sticky left-0 z-30 flex w-[300px] shrink-0 items-end justify-between border-r border-[#E5E5E5] bg-[#F7F7F6] px-5 py-3 sm:w-[340px]">
-                <span className="text-[11px] font-semibold text-[#0F0F0F]">
+              <div className="sticky left-0 z-30 flex w-[300px] shrink-0 items-end justify-between border-r border-[#0A0A0A] bg-[#F4F4F4] px-5 py-3 sm:w-[340px]">
+                <span className="text-[11px] font-bold text-[#0A0A0A]">
                   Этап / Подэтап · Роль
                 </span>
-                <span className="text-[11px] text-[#737373]">Готовность</span>
+                <span className="text-[11px] font-medium text-[#525252]">Готовность</span>
               </div>
 
               {/* Right Two-Tier Month + Week Header */}
@@ -443,12 +443,12 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                 style={{ minWidth: `${calendar.timelineWidthPx}px` }}
               >
                 {/* Row 1: Months */}
-                <div className="relative h-7 border-b border-[#E5E5E5]">
+                <div className="relative h-7 border-b border-[#D4D4D4]">
                   {calendar.months.map((m) => (
                     <div
                       key={m.key}
                       style={{ left: `${m.leftPct}%`, width: `${m.widthPct}%` }}
-                      className="absolute top-0 bottom-0 flex items-center overflow-hidden border-r border-[#E5E5E5] px-2.5 text-[11px] font-semibold text-[#0F0F0F]"
+                      className="absolute top-0 bottom-0 flex items-center overflow-hidden border-r border-[#D4D4D4] px-2.5 text-[11px] font-bold text-[#0A0A0A]"
                     >
                       <span className="truncate">{m.label}</span>
                     </div>
@@ -461,7 +461,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                     <div
                       key={idx}
                       style={{ left: `${w.leftPct}%`, width: `${w.widthPct}%` }}
-                      className="absolute top-0 bottom-0 flex items-center border-r border-[#E5E5E5] px-2 font-mono text-[10px] tabular-nums text-[#737373]"
+                      className="absolute top-0 bottom-0 flex items-center border-r border-[#D4D4D4] px-2 font-mono text-[10px] font-medium tabular-nums text-[#525252]"
                     >
                       {w.label}
                     </div>
@@ -473,7 +473,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                       style={{ left: `${calendar.todayPct}%` }}
                       className="pointer-events-none absolute top-0 bottom-0 z-20 -translate-x-1/2"
                     >
-                      <div className="bg-[#0F0F0F] px-1.5 py-0.5 font-mono text-[9px] font-medium tabular-nums text-white whitespace-nowrap">
+                      <div className="bg-[#0A0A0A] px-1.5 py-0.5 font-mono text-[9px] font-bold tabular-nums text-white whitespace-nowrap">
                         {formatShortDate(todayIso)}
                       </div>
                     </div>
@@ -483,7 +483,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
             </div>
 
             {/* Body Rows */}
-            <div className="divide-y divide-[#E5E5E5]">
+            <div className="divide-y divide-[#D4D4D4]">
               {grouped.map((group) => {
                 const isCollapsed = !!collapsedStages[group.stageId];
                 const summaryLeft =
@@ -498,21 +498,21 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                 return (
                   <div key={group.stageId}>
                     {/* Parent Summary Row: KP Payment Stage */}
-                    <div className="flex border-b border-[#E5E5E5] bg-[#F7F7F6]">
+                    <div className="flex border-b border-[#D4D4D4] bg-[#F4F4F4]">
                       {/* Sticky Left Summary Cell */}
-                      <div className="sticky left-0 z-20 flex w-[300px] shrink-0 items-center justify-between gap-2 border-r border-[#E5E5E5] bg-[#F7F7F6] px-4 py-3 sm:w-[340px]">
+                      <div className="sticky left-0 z-20 flex w-[300px] shrink-0 items-center justify-between gap-2 border-r border-[#0A0A0A] bg-[#F4F4F4] px-4 py-3 sm:w-[340px]">
                         <button
                           type="button"
                           onClick={() => toggleStageCollapse(group.stageId)}
                           className="flex min-w-0 items-center gap-2 text-left"
                         >
                           {isCollapsed ? (
-                            <ChevronRight className="h-4 w-4 shrink-0 text-[#0F0F0F]" />
+                            <ChevronRight className="h-4 w-4 shrink-0 text-[#0A0A0A]" />
                           ) : (
-                            <ChevronDown className="h-4 w-4 shrink-0 text-[#0F0F0F]" />
+                            <ChevronDown className="h-4 w-4 shrink-0 text-[#0A0A0A]" />
                           )}
                           <div className="min-w-0">
-                            <div className="truncate text-xs font-semibold text-[#0F0F0F]">
+                            <div className="truncate text-xs font-bold text-[#0A0A0A]">
                               {group.title}
                             </div>
                             <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#525252]">
@@ -521,8 +521,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                               <span
                                 className={
                                   group.isPaid
-                                    ? 'font-medium text-[#15803D]'
-                                    : 'text-[#737373]'
+                                    ? 'font-semibold text-[#15803D]'
+                                    : 'text-[#525252]'
                                 }
                               >
                                 {group.isPaid ? 'Оплачено' : 'Ожидается'}
@@ -532,14 +532,14 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                         </button>
 
                         <div className="flex shrink-0 items-center gap-2">
-                          <span className="font-mono text-xs font-semibold tabular-nums text-[#0F0F0F]">
+                          <span className="font-mono text-xs font-bold tabular-nums text-[#0A0A0A]">
                             {group.avgProgress}%
                           </span>
                           {group.stageId !== '__orphans__' && (
                             <button
                               type="button"
                               onClick={() => openAddTask(group.stageId)}
-                              className="flex h-6 w-6 items-center justify-center border border-[#D4D4D4] bg-white text-[#0F0F0F] hover:border-[#0F0F0F]"
+                              className="flex h-6 w-6 items-center justify-center border border-[#0A0A0A] bg-white text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white"
                               title="Добавить подэтап"
                               aria-label="Добавить подэтап"
                             >
@@ -559,7 +559,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                           <div
                             key={idx}
                             style={{ left: `${w.leftPct}%`, width: `${w.widthPct}%` }}
-                            className="pointer-events-none absolute top-0 bottom-0 border-r border-[#EAEAE8]"
+                            className="pointer-events-none absolute top-0 bottom-0 border-r border-[#E0E0E0]"
                           />
                         ))}
 
@@ -567,7 +567,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                         {calendar.todayPct >= 0 && calendar.todayPct <= 100 && (
                           <div
                             style={{ left: `${calendar.todayPct}%` }}
-                            className="pointer-events-none absolute top-0 bottom-0 z-10 w-[1.5px] bg-[#0F0F0F]"
+                            className="pointer-events-none absolute top-0 bottom-0 z-10 w-[1.5px] bg-[#0A0A0A]"
                           />
                         )}
 
@@ -575,10 +575,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                         {summaryLeft !== null && summaryWidth !== null && (
                           <div
                             style={{ left: `${summaryLeft}%`, width: `${summaryWidth}%` }}
-                            className="absolute top-1/2 h-2 -translate-y-1/2 border-x-2 border-t-2 border-[#0F0F0F]"
+                            className="absolute top-1/2 h-2.5 -translate-y-1/2 border-x-2 border-t-2 border-[#0A0A0A]"
                           >
                             <div
-                              className="h-full bg-[#0F0F0F]/20"
+                              className="h-full bg-[#0A0A0A]/25"
                               style={{ width: `${group.avgProgress}%` }}
                             />
                           </div>
@@ -590,36 +590,39 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                     {!isCollapsed &&
                       (group.tasks.length === 0 ? (
                         <div className="flex bg-white">
-                          <div className="sticky left-0 z-20 w-[300px] shrink-0 border-r border-[#E5E5E5] bg-white px-10 py-3 text-xs text-[#737373] sm:w-[340px]">
+                          <div className="sticky left-0 z-20 w-[300px] shrink-0 border-r border-[#0A0A0A] bg-white px-10 py-3 text-xs text-[#737373] sm:w-[340px]">
                             Нет подэтапов
                           </div>
                           <div className="flex-1" />
                         </div>
                       ) : (
-                        <div className="divide-y divide-[#EFEFED]">
+                        <div className="divide-y divide-[#D4D4D4]">
                           {group.tasks.map((task) => {
                             const member = memberMap.get(task.assigneeId);
                             const geo = computeTaskGeometry(task);
+                            const overrunLabel = `+${geo.overrunDays} дн.`;
+                            const showOverrunInside =
+                              geo.tailWidth !== null && geo.tailWidth >= 6.5;
 
                             return (
                               <div
                                 key={task.id}
-                                className="group flex bg-white transition-colors hover:bg-[#FAF9F8]"
+                                className="group flex bg-white transition-colors hover:bg-[#F4F4F4]"
                               >
                                 {/* Sticky Left Task Cell */}
-                                <div className="sticky left-0 z-20 flex w-[300px] shrink-0 flex-col justify-center border-r border-[#E5E5E5] bg-white py-3 pr-4 pl-9 transition-colors group-hover:bg-[#FAF9F8] sm:w-[340px]">
+                                <div className="sticky left-0 z-20 flex w-[300px] shrink-0 flex-col justify-center border-r border-[#0A0A0A] bg-white py-3 pr-4 pl-9 transition-colors group-hover:bg-[#F4F4F4] sm:w-[340px]">
                                   <div className="flex items-start justify-between gap-2">
                                     <button
                                       type="button"
                                       onClick={() => openEditTask(task)}
-                                      className="text-left text-xs font-medium text-[#0F0F0F] underline-offset-4 hover:underline"
+                                      className="text-left text-xs font-semibold text-[#0A0A0A] underline-offset-4 hover:underline"
                                     >
                                       {task.title}
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => openEditTask(task)}
-                                      className="shrink-0 p-0.5 text-[#737373] opacity-70 hover:text-[#0F0F0F] hover:opacity-100"
+                                      className="shrink-0 p-0.5 text-[#525252] opacity-75 hover:text-[#0A0A0A] hover:opacity-100"
                                       aria-label="Редактировать подэтап"
                                     >
                                       <Pencil className="h-3 w-3" />
@@ -628,7 +631,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
 
                                   <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px]">
                                     <div className="flex items-center gap-1.5 text-[#525252]">
-                                      <span className="font-mono font-semibold text-[#0F0F0F]">
+                                      <span className="font-mono font-bold text-[#0A0A0A]">
                                         {member ? member.code : '—'}
                                       </span>
                                       <span aria-hidden="true">·</span>
@@ -647,10 +650,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                                         onChange={(e) =>
                                           handleQuickProgress(task.id, Number(e.target.value))
                                         }
-                                        className="h-1 w-12 cursor-pointer accent-[#0F0F0F]"
+                                        className="h-1 w-12 cursor-pointer accent-[#0A0A0A]"
                                         aria-label={`Готовность ${task.title}`}
                                       />
-                                      <span className="w-8 text-right font-mono font-semibold tabular-nums text-[#0F0F0F]">
+                                      <span className="w-8 text-right font-mono font-bold tabular-nums text-[#0A0A0A]">
                                         {task.progress}%
                                       </span>
                                     </label>
@@ -658,16 +661,16 @@ export const GanttChart: React.FC<GanttChartProps> = ({
 
                                   {(geo.hasOverrun || task.delayReason !== 'none') && (
                                     <div
-                                      className={`mt-1 text-[10px] font-medium ${
+                                      className={`mt-1 text-[10px] font-bold ${
                                         task.delayReason === 'client'
-                                          ? 'text-[#B45309]'
-                                          : 'text-[#B91C1C]'
+                                          ? 'text-[#D97706]'
+                                          : 'text-[#DC2626]'
                                       }`}
                                     >
                                       {task.delayReason === 'client'
                                         ? 'Ожидание обратной связи клиента'
                                         : 'Задержка студии'}
-                                      {geo.hasOverrun ? ` · +${geo.overrunDays} дн.` : ''}
+                                      {geo.hasOverrun ? ` · ${overrunLabel}` : ''}
                                     </div>
                                   )}
                                 </div>
@@ -676,14 +679,14 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                                 <div
                                   onClick={() => openEditTask(task)}
                                   className="relative flex-1 cursor-pointer py-3"
-                                  style={{ minWidth: `${calendar.timelineWidthPx}px`, minHeight: '66px' }}
+                                  style={{ minWidth: `${calendar.timelineWidthPx}px`, minHeight: '70px' }}
                                 >
                                   {/* Week Gridlines */}
                                   {calendar.weeks.map((w, idx) => (
                                     <div
                                       key={idx}
                                       style={{ left: `${w.leftPct}%`, width: `${w.widthPct}%` }}
-                                      className="pointer-events-none absolute top-0 bottom-0 border-r border-[#F2F2F0]"
+                                      className="pointer-events-none absolute top-0 bottom-0 border-r border-[#E5E5E5]"
                                     />
                                   ))}
 
@@ -691,11 +694,11 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                                   {calendar.todayPct >= 0 && calendar.todayPct <= 100 && (
                                     <div
                                       style={{ left: `${calendar.todayPct}%` }}
-                                      className="pointer-events-none absolute top-0 bottom-0 z-10 w-[1.5px] bg-[#0F0F0F]/80"
+                                      className="pointer-events-none absolute top-0 bottom-0 z-10 w-[1.5px] bg-[#0A0A0A]"
                                     />
                                   )}
 
-                                  {/* LAYER 1 (Top): Thin Hatched/Dashed PLAN Strip */}
+                                  {/* LAYER 1 (Top): Graphic Black-Outlined Hatched PLAN Strip */}
                                   <div className="relative h-4">
                                     {geo.planLeft !== null && geo.planWidth !== null && (
                                       <div
@@ -704,13 +707,13 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                                           width: `${geo.planWidth}%`,
                                         }}
                                         title={`План: ${formatDate(task.planStart)} — ${formatDate(task.planEnd)}`}
-                                        className="gantt-plan-hatch absolute top-1 h-2.5 border border-dashed border-[#8A8A8A]"
+                                        className="gantt-plan-hatch absolute top-0.5 h-3 border border-[#0A0A0A]"
                                       />
                                     )}
                                   </div>
 
-                                  {/* LAYER 2 (Bottom): High-Contrast FACT Bar + Overrun Tail */}
-                                  <div className="relative mt-1 h-5">
+                                  {/* LAYER 2 (Bottom): High-Contrast Solid FACT Bar + Red Overrun Tail */}
+                                  <div className="relative mt-1.5 h-5">
                                     {/* Base Actual Segment (within plan) */}
                                     {geo.baseLeft !== null && geo.baseWidth !== null && (
                                       <div
@@ -719,13 +722,13 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                                           width: `${geo.baseWidth}%`,
                                         }}
                                         title={`Факт: ${formatDate(geo.actStartStr)} — ${formatDate(geo.actEndStr)} · ${task.progress}%`}
-                                        className="absolute top-0.5 h-4 overflow-hidden border border-[#0F0F0F]/15 bg-[#E5E5E5]"
+                                        className="absolute top-0 h-4 overflow-hidden border border-[#0A0A0A] bg-[#F4F4F4]"
                                       >
                                         <div
                                           className={`h-full ${geo.mainFillColorClass}`}
                                           style={{ width: `${task.progress}%` }}
                                         />
-                                        <span className="pointer-events-none absolute inset-y-0 left-1.5 flex items-center font-mono text-[9px] font-semibold tabular-nums text-white mix-blend-difference">
+                                        <span className="pointer-events-none absolute inset-y-0 left-1.5 flex items-center font-mono text-[9px] font-bold tabular-nums text-white mix-blend-difference">
                                           {task.progress}%
                                         </span>
                                       </div>
@@ -733,18 +736,39 @@ export const GanttChart: React.FC<GanttChartProps> = ({
 
                                     {/* Overrun Tail Segment (strictly beyond planEnd) */}
                                     {geo.tailLeft !== null && geo.tailWidth !== null && (
-                                      <div
-                                        style={{
-                                          left: `${geo.tailLeft}%`,
-                                          width: `${geo.tailWidth}%`,
-                                        }}
-                                        title={`Перерасход срока: +${geo.overrunDays} дн. (${task.delayReason === 'client' ? 'ожидание клиента' : 'задержка студии'})`}
-                                        className={`absolute top-0.5 flex h-4 items-center overflow-hidden ${geo.tailColorClass}`}
-                                      >
-                                        <span className="truncate px-1.5 font-mono text-[9px] font-semibold tabular-nums text-white">
-                                          +{geo.overrunDays}д
-                                        </span>
-                                      </div>
+                                      <>
+                                        <div
+                                          style={{
+                                            left: `${geo.tailLeft}%`,
+                                            width: `${geo.tailWidth}%`,
+                                          }}
+                                          title={`Перерасход срока: ${overrunLabel} (${task.delayReason === 'client' ? 'ожидание клиента' : 'задержка студии'})`}
+                                          className={`absolute top-0 flex h-4 items-center overflow-hidden ${geo.tailColorClass}`}
+                                        >
+                                          {showOverrunInside && (
+                                            <span className="truncate px-1.5 font-mono text-[9px] font-bold tabular-nums text-white">
+                                              {overrunLabel}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {!showOverrunInside && (
+                                          <span
+                                            style={{
+                                              left: `calc(${Math.min(
+                                                92,
+                                                geo.tailLeft + geo.tailWidth
+                                              )}% + 4px)`,
+                                            }}
+                                            className={`pointer-events-none absolute top-0 flex h-4 items-center font-mono text-[10px] font-bold tabular-nums whitespace-nowrap ${
+                                              task.delayReason === 'client'
+                                                ? 'text-[#D97706]'
+                                                : 'text-[#DC2626]'
+                                            }`}
+                                          >
+                                            {overrunLabel}
+                                          </span>
+                                        )}
+                                      </>
                                     )}
                                   </div>
                                 </div>
@@ -761,27 +785,27 @@ export const GanttChart: React.FC<GanttChartProps> = ({
         </div>
       ) : (
         /* COMPACT TIMELINE MODE (IDEAL FOR MOBILE & QUICK STAGE REVIEW) */
-        <div className="divide-y divide-[#E5E5E5]">
+        <div className="divide-y divide-[#D4D4D4]">
           {grouped.map((group) => {
             const isCollapsed = !!collapsedStages[group.stageId];
             return (
               <div key={group.stageId}>
-                <div className="flex items-center justify-between gap-3 bg-[#F7F7F6] px-5 py-3.5">
+                <div className="flex items-center justify-between gap-3 bg-[#F4F4F4] px-5 py-3.5">
                   <button
                     type="button"
                     onClick={() => toggleStageCollapse(group.stageId)}
                     className="flex min-w-0 items-center gap-2 text-left"
                   >
                     {isCollapsed ? (
-                      <ChevronRight className="h-4 w-4 shrink-0 text-[#0F0F0F]" />
+                      <ChevronRight className="h-4 w-4 shrink-0 text-[#0A0A0A]" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 shrink-0 text-[#0F0F0F]" />
+                      <ChevronDown className="h-4 w-4 shrink-0 text-[#0A0A0A]" />
                     )}
                     <div className="min-w-0">
-                      <div className="text-xs font-semibold text-[#0F0F0F]">{group.title}</div>
+                      <div className="text-xs font-bold text-[#0A0A0A]">{group.title}</div>
                       <div className="mt-0.5 text-[11px] text-[#525252]">
                         {group.tasks.length} подэт. ·{' '}
-                        <span className={group.isPaid ? 'text-[#15803D]' : 'text-[#737373]'}>
+                        <span className={group.isPaid ? 'font-semibold text-[#15803D]' : 'text-[#525252]'}>
                           {group.isPaid ? 'Оплачено' : 'Ожидается оплата'}
                         </span>
                       </div>
@@ -789,14 +813,14 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                   </button>
 
                   <div className="flex items-center gap-2.5 shrink-0">
-                    <span className="font-mono text-xs font-semibold tabular-nums text-[#0F0F0F]">
+                    <span className="font-mono text-xs font-bold tabular-nums text-[#0A0A0A]">
                       {group.avgProgress}%
                     </span>
                     {group.stageId !== '__orphans__' && (
                       <button
                         type="button"
                         onClick={() => openAddTask(group.stageId)}
-                        className="flex h-7 w-7 items-center justify-center border border-[#D4D4D4] bg-white text-[#0F0F0F]"
+                        className="flex h-7 w-7 items-center justify-center border border-[#0A0A0A] bg-white text-[#0A0A0A]"
                         aria-label="Добавить подэтап"
                       >
                         <Plus className="h-3.5 w-3.5" />
@@ -806,7 +830,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                 </div>
 
                 {!isCollapsed && (
-                  <div className="divide-y divide-[#EFEFED]">
+                  <div className="divide-y divide-[#D4D4D4]">
                     {group.tasks.map((task) => {
                       const member = memberMap.get(task.assigneeId);
                       const geo = computeTaskGeometry(task);
@@ -814,20 +838,20 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                         <div
                           key={task.id}
                           onClick={() => openEditTask(task)}
-                          className="cursor-pointer bg-white px-5 py-4 transition-colors hover:bg-[#FAF9F8]"
+                          className="cursor-pointer bg-white px-5 py-4 transition-colors hover:bg-[#F4F4F4]"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <div className="text-sm font-medium text-[#0F0F0F]">
+                              <div className="text-sm font-semibold text-[#0A0A0A]">
                                 {task.title}
                               </div>
                               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[#525252]">
-                                <span className="font-mono font-semibold text-[#0F0F0F]">
+                                <span className="font-mono font-bold text-[#0A0A0A]">
                                   {member ? `${member.code} · ${member.roleTitle}` : 'Исполнитель не назначен'}
                                 </span>
                               </div>
                             </div>
-                            <span className="font-mono text-sm font-semibold tabular-nums text-[#0F0F0F] shrink-0">
+                            <span className="font-mono text-sm font-bold tabular-nums text-[#0A0A0A] shrink-0">
                               {task.progress}%
                             </span>
                           </div>
@@ -835,14 +859,14 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                           {/* Dual Plan vs Fact Dates Row */}
                           <div className="mt-3 grid grid-cols-2 gap-3 text-[11px]">
                             <div>
-                              <span className="text-[#737373]">План: </span>
-                              <span className="font-mono tabular-nums text-[#0F0F0F]">
+                              <span className="text-[#525252]">План: </span>
+                              <span className="font-mono font-medium tabular-nums text-[#0A0A0A]">
                                 {formatShortDate(task.planStart)} — {formatShortDate(task.planEnd)}
                               </span>
                             </div>
                             <div>
-                              <span className="text-[#737373]">Факт: </span>
-                              <span className="font-mono tabular-nums text-[#0F0F0F]">
+                              <span className="text-[#525252]">Факт: </span>
+                              <span className="font-mono font-medium tabular-nums text-[#0A0A0A]">
                                 {task.actualStart
                                   ? `${formatShortDate(task.actualStart)} — ${task.actualEnd ? formatShortDate(task.actualEnd) : 'в работе'}`
                                   : 'не начато'}
@@ -851,7 +875,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                           </div>
 
                           {/* Progress + Overrun Indicator Strip */}
-                          <div className="mt-2.5 flex h-2 w-full overflow-hidden bg-[#ECECE9]">
+                          <div className="mt-2.5 flex h-2 w-full overflow-hidden border border-[#0A0A0A] bg-[#F4F4F4]">
                             <div
                               className={`h-full ${geo.mainFillColorClass}`}
                               style={{ width: `${task.progress}%` }}
@@ -860,10 +884,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({
 
                           {(geo.hasOverrun || task.delayReason !== 'none') && (
                             <div
-                              className={`mt-2 text-[11px] font-medium ${
+                              className={`mt-2 text-[11px] font-bold ${
                                 task.delayReason === 'client'
-                                  ? 'text-[#B45309]'
-                                  : 'text-[#B91C1C]'
+                                  ? 'text-[#D97706]'
+                                  : 'text-[#DC2626]'
                               }`}
                             >
                               {task.delayReason === 'client'
@@ -886,13 +910,13 @@ export const GanttChart: React.FC<GanttChartProps> = ({
       {/* Edit / Add Work Sub-Stage Modal */}
       {editingTask && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-lg border border-[#E5E5E5] bg-white p-6">
-            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
-              <h3 className="text-sm font-semibold text-[#0F0F0F]">
+          <div className="w-full max-w-lg border border-[#0A0A0A] bg-white p-6">
+            <div className="flex items-center justify-between border-b border-[#0A0A0A] pb-3">
+              <h3 className="text-sm font-bold text-[#0A0A0A]">
                 {isAddingTask ? 'Новый рабочий подэтап' : 'Редактирование подэтапа'}
               </h3>
               <button

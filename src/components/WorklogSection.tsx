@@ -214,11 +214,11 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
   return (
     <section aria-label="Журнал выработки и расходов" className="space-y-5">
       {!fixedProjectId && (
-        <div className="border-b border-[#E5E5E2] pb-6">
-          <div className="text-xs text-[#6B6B68]">
+        <div className="border-b border-[#0A0A0A] pb-6">
+          <div className="text-xs text-[#525252]">
             Учёт м² и часов для автоматического деления окладов, сдельных начислений и прямых чеков
           </div>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#0F0F0F] sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#0A0A0A] sm:text-3xl">
             Журнал выработки и расходов
           </h1>
         </div>
@@ -226,14 +226,14 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
 
       {/* Controls Bar */}
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-        <div className="flex items-center gap-1 border border-[#E5E5E2] bg-white p-1 self-start">
+        <div className="flex items-center gap-1 border border-[#0A0A0A] bg-[#F4F4F4] p-1 self-start">
           <button
             type="button"
             onClick={() => setSubTab('worklog')}
             className={`px-3.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
               subTab === 'worklog'
-                ? 'bg-[#0F0F0F] text-white'
-                : 'text-[#6B6B68] hover:text-[#0F0F0F]'
+                ? 'bg-[#0A0A0A] text-white'
+                : 'text-[#525252] hover:text-[#0A0A0A]'
             }`}
           >
             Выработка команды ({filteredWorklogs.length})
@@ -243,8 +243,8 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
             onClick={() => setSubTab('expenses')}
             className={`px-3.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
               subTab === 'expenses'
-                ? 'bg-[#0F0F0F] text-white'
-                : 'text-[#6B6B68] hover:text-[#0F0F0F]'
+                ? 'bg-[#0A0A0A] text-white'
+                : 'text-[#525252] hover:text-[#0A0A0A]'
             }`}
           >
             Прямые чеки ({filteredExpenses.length})
@@ -256,7 +256,7 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
             <select
               value={filterProjectId}
               onChange={(e) => setFilterProjectId(e.target.value)}
-              className="h-9 border border-[#E5E5E2] bg-white px-2.5 text-xs text-[#0F0F0F] focus:border-[#0F0F0F] focus:outline-none"
+              className="h-9 border border-[#0A0A0A] bg-white px-2.5 text-xs text-[#0A0A0A] focus:outline-none"
             >
               <option value="all">Все объекты</option>
               {data.projects.map((p) => (
@@ -270,7 +270,7 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
           <select
             value={filterMonth}
             onChange={(e) => setFilterMonth(e.target.value)}
-            className="h-9 border border-[#E5E5E2] bg-white px-2.5 text-xs text-[#0F0F0F] focus:border-[#0F0F0F] focus:outline-none"
+            className="h-9 border border-[#0A0A0A] bg-white px-2.5 text-xs text-[#0A0A0A] focus:outline-none"
           >
             <option value="all">Все месяцы</option>
             {availableMonths.map((m) => (
@@ -285,7 +285,7 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
               type="button"
               disabled={data.projects.length === 0 || data.team.length === 0}
               onClick={openNewWorklog}
-              className="flex h-9 items-center gap-1.5 bg-[#0F0F0F] px-3.5 text-xs font-medium text-white transition-colors hover:bg-[#2A2A2A] disabled:opacity-40 whitespace-nowrap"
+              className="flex h-9 items-center gap-1.5 bg-[#0A0A0A] px-3.5 text-xs font-medium text-white transition-colors hover:bg-[#262626] disabled:opacity-40 whitespace-nowrap"
             >
               <Plus className="h-3.5 w-3.5" />
               Внести выработку
@@ -295,7 +295,7 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
               type="button"
               disabled={data.projects.length === 0}
               onClick={openNewExpense}
-              className="flex h-9 items-center gap-1.5 bg-[#0F0F0F] px-3.5 text-xs font-medium text-white transition-colors hover:bg-[#2A2A2A] disabled:opacity-40 whitespace-nowrap"
+              className="flex h-9 items-center gap-1.5 bg-[#0A0A0A] px-3.5 text-xs font-medium text-white transition-colors hover:bg-[#262626] disabled:opacity-40 whitespace-nowrap"
             >
               <Plus className="h-3.5 w-3.5" />
               Добавить чек
@@ -306,15 +306,15 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
 
       {/* Add / Edit Worklog Form */}
       {subTab === 'worklog' && showWorklogForm && (
-        <form onSubmit={submitWorklog} className="border border-[#0F0F0F] bg-white p-5">
-          <div className="flex items-center justify-between border-b border-[#E5E5E2] pb-3">
-            <div className="text-sm font-semibold text-[#0F0F0F]">
+        <form onSubmit={submitWorklog} className="border border-[#0A0A0A] bg-white p-5">
+          <div className="flex items-center justify-between border-b border-[#D4D4D4] pb-3">
+            <div className="text-sm font-semibold text-[#0A0A0A]">
               {editingWlId ? 'Редактировать запись выработки' : 'Новая запись выработки / сделки'}
             </div>
             <button
               type="button"
               onClick={() => setShowWorklogForm(false)}
-              className="text-[#6B6B68] hover:text-[#0F0F0F]"
+              className="text-[#525252] hover:text-[#0A0A0A]"
             >
               <X className="h-4 w-4" />
             </button>
@@ -439,17 +439,17 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
             </div>
           </div>
 
-          <div className="mt-4 flex justify-end gap-2 border-t border-[#E5E5E2] pt-3">
+          <div className="mt-4 flex justify-end gap-2 border-t border-[#D4D4D4] pt-3">
             <button
               type="button"
               onClick={() => setShowWorklogForm(false)}
-              className="min-h-[38px] border border-[#D4D4D0] bg-white px-4 text-xs font-medium text-[#0F0F0F]"
+              className="min-h-[38px] border border-[#0A0A0A] bg-white px-4 text-xs font-medium text-[#0A0A0A] hover:bg-[#F4F4F4]"
             >
               Отмена
             </button>
             <button
               type="submit"
-              className="min-h-[38px] bg-[#0F0F0F] px-5 text-xs font-medium text-white"
+              className="min-h-[38px] bg-[#0A0A0A] px-5 text-xs font-medium text-white hover:bg-[#262626]"
             >
               {editingWlId ? 'Сохранить' : 'Записать'}
             </button>
@@ -459,15 +459,15 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
 
       {/* Add / Edit Direct Expense Form */}
       {subTab === 'expenses' && showExpenseForm && (
-        <form onSubmit={submitExpense} className="border border-[#0F0F0F] bg-white p-5">
-          <div className="flex items-center justify-between border-b border-[#E5E5E2] pb-3">
-            <div className="text-sm font-semibold text-[#0F0F0F]">
+        <form onSubmit={submitExpense} className="border border-[#0A0A0A] bg-white p-5">
+          <div className="flex items-center justify-between border-b border-[#D4D4D4] pb-3">
+            <div className="text-sm font-semibold text-[#0A0A0A]">
               {editingExpId ? 'Редактировать расход' : 'Новый прямой чек по объекту'}
             </div>
             <button
               type="button"
               onClick={() => setShowExpenseForm(false)}
-              className="text-[#6B6B68] hover:text-[#0F0F0F]"
+              className="text-[#525252] hover:text-[#0A0A0A]"
             >
               <X className="h-4 w-4" />
             </button>
@@ -543,17 +543,17 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
             </div>
           </div>
 
-          <div className="mt-4 flex justify-end gap-2 border-t border-[#E5E5E2] pt-3">
+          <div className="mt-4 flex justify-end gap-2 border-t border-[#D4D4D4] pt-3">
             <button
               type="button"
               onClick={() => setShowExpenseForm(false)}
-              className="min-h-[38px] border border-[#D4D4D0] bg-white px-4 text-xs font-medium text-[#0F0F0F]"
+              className="min-h-[38px] border border-[#0A0A0A] bg-white px-4 text-xs font-medium text-[#0A0A0A] hover:bg-[#F4F4F4]"
             >
               Отмена
             </button>
             <button
               type="submit"
-              className="min-h-[38px] bg-[#0F0F0F] px-5 text-xs font-medium text-white"
+              className="min-h-[38px] bg-[#0A0A0A] px-5 text-xs font-medium text-white hover:bg-[#262626]"
             >
               {editingExpId ? 'Сохранить' : 'Добавить чек'}
             </button>
@@ -563,10 +563,10 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
 
       {/* Worklog Table */}
       {subTab === 'worklog' ? (
-        <div className="overflow-x-auto border border-[#E5E5E2] bg-white">
+        <div className="overflow-x-auto border border-[#0A0A0A] bg-white">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="border-b border-[#E5E5E2] bg-[#FAF9F8] text-[11px] font-medium text-[#6B6B68]">
+              <tr className="border-b border-[#0A0A0A] bg-[#F4F4F4] text-[11px] font-medium text-[#525252]">
                 <th className="px-5 py-3">Месяц / Дата</th>
                 {!fixedProjectId && <th className="px-4 py-3">Объект</th>}
                 <th className="px-4 py-3">Роль</th>
@@ -576,12 +576,12 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
                 <th className="px-5 py-3 text-right">Действия</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EFEFEC] text-xs">
+            <tbody className="divide-y divide-[#D4D4D4] text-xs">
               {filteredWorklogs.length === 0 ? (
                 <tr>
                   <td
                     colSpan={fixedProjectId ? 6 : 7}
-                    className="px-5 py-10 text-center text-[#6B6B68]"
+                    className="px-5 py-10 text-center text-[#525252]"
                   >
                     Записей выработки пока нет.
                   </td>
@@ -591,36 +591,36 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
                   const m = memberMap.get(w.memberId);
                   const p = projectMap.get(w.projectId);
                   return (
-                    <tr key={w.id} className="hover:bg-[#FAF9F8]">
+                    <tr key={w.id} className="hover:bg-[#F4F4F4]">
                       <td className="px-5 py-3 whitespace-nowrap">
-                        <div className="font-medium text-[#0F0F0F]">
+                        <div className="font-medium text-[#0A0A0A]">
                           {formatMonthLabel(w.month)}
                         </div>
-                        <div className="font-mono text-[11px] tabular-nums text-[#8A8A86]">
+                        <div className="font-mono text-[11px] tabular-nums text-[#737373]">
                           {formatDate(w.date)}
                         </div>
                       </td>
                       {!fixedProjectId && (
-                        <td className="px-4 py-3 font-medium text-[#0F0F0F]">
+                        <td className="px-4 py-3 font-medium text-[#0A0A0A]">
                           {p?.name || 'Удалённый объект'}
                         </td>
                       )}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="mr-1.5 font-mono text-[11px] font-semibold text-[#0F0F0F]">
+                        <span className="mr-1.5 font-mono text-[11px] font-semibold text-[#0A0A0A]">
                           {m?.code || '—'}
                         </span>
-                        <span className="text-[#52524F]">{m?.roleTitle || 'Неизвестно'}</span>
+                        <span className="text-[#525252]">{m?.roleTitle || 'Неизвестно'}</span>
                       </td>
-                      <td className="px-4 py-3 text-right font-mono tabular-nums text-[#0F0F0F] whitespace-nowrap">
+                      <td className="px-4 py-3 text-right font-mono tabular-nums text-[#0A0A0A] whitespace-nowrap">
                         {w.areaSqm > 0 ? `${formatNumber(w.areaSqm)} м²` : ''}
                         {w.areaSqm > 0 && w.hours > 0 ? ' · ' : ''}
                         {w.hours > 0 ? `${formatNumber(w.hours)} ч` : ''}
                         {w.areaSqm === 0 && w.hours === 0 ? '—' : ''}
                       </td>
-                      <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-[#0F0F0F] whitespace-nowrap">
+                      <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-[#0A0A0A] whitespace-nowrap">
                         {w.pieceworkAmount > 0 ? formatCurrency(w.pieceworkAmount) : 'Оклад'}
                       </td>
-                      <td className="max-w-xs truncate px-4 py-3 text-[#6B6B68]">
+                      <td className="max-w-xs truncate px-4 py-3 text-[#525252]">
                         {w.comment || '—'}
                       </td>
                       <td className="px-5 py-3 text-right">
@@ -628,7 +628,7 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
                           <button
                             type="button"
                             onClick={() => startEditWorklog(w)}
-                            className="flex h-7 w-7 items-center justify-center border border-[#E5E5E2] bg-white text-[#52524F] hover:border-[#0F0F0F] hover:text-[#0F0F0F]"
+                            className="flex h-7 w-7 items-center justify-center border border-[#D4D4D4] bg-white text-[#525252] hover:border-[#0A0A0A] hover:text-[#0A0A0A]"
                             aria-label="Редактировать"
                           >
                             <Pencil className="h-3 w-3" />
@@ -636,7 +636,7 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
                           <button
                             type="button"
                             onClick={() => onDeleteWorklog(w.id)}
-                            className="flex h-7 w-7 items-center justify-center border border-[#E5E5E2] bg-white text-[#6B6B68] hover:border-[#B91C1C] hover:text-[#B91C1C]"
+                            className="flex h-7 w-7 items-center justify-center border border-[#D4D4D4] bg-white text-[#525252] hover:border-[#DC2626] hover:text-[#DC2626]"
                             aria-label="Удалить"
                           >
                             <Trash2 className="h-3 w-3" />
@@ -650,7 +650,7 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
             </tbody>
             {filteredWorklogs.length > 0 && (
               <tfoot>
-                <tr className="border-t border-[#E5E5E2] bg-[#FAF9F8] text-xs font-semibold text-[#0F0F0F]">
+                <tr className="border-t border-[#0A0A0A] bg-[#F4F4F4] text-xs font-semibold text-[#0A0A0A]">
                   <td colSpan={fixedProjectId ? 3 : 4} className="px-5 py-3">
                     Итого сдельная оплата по выборке
                   </td>
@@ -665,10 +665,10 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
         </div>
       ) : (
         /* Direct Expenses Table */
-        <div className="overflow-x-auto border border-[#E5E5E2] bg-white">
+        <div className="overflow-x-auto border border-[#0A0A0A] bg-white">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="border-b border-[#E5E5E2] bg-[#FAF9F8] text-[11px] font-medium text-[#6B6B68]">
+              <tr className="border-b border-[#0A0A0A] bg-[#F4F4F4] text-[11px] font-medium text-[#525252]">
                 <th className="px-5 py-3">Дата</th>
                 {!fixedProjectId && <th className="px-4 py-3">Объект</th>}
                 <th className="px-4 py-3">Категория</th>
@@ -677,12 +677,12 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
                 <th className="px-5 py-3 text-right">Действия</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EFEFEC] text-xs">
+            <tbody className="divide-y divide-[#D4D4D4] text-xs">
               {filteredExpenses.length === 0 ? (
                 <tr>
                   <td
                     colSpan={fixedProjectId ? 5 : 6}
-                    className="px-5 py-10 text-center text-[#6B6B68]"
+                    className="px-5 py-10 text-center text-[#525252]"
                   >
                     Прямых расходов (печать, выкрасы, логистика) пока нет.
                   </td>
@@ -691,20 +691,20 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
                 filteredExpenses.map((exp) => {
                   const p = projectMap.get(exp.projectId);
                   return (
-                    <tr key={exp.id} className="hover:bg-[#FAF9F8]">
-                      <td className="px-5 py-3 font-mono tabular-nums text-[#52524F] whitespace-nowrap">
+                    <tr key={exp.id} className="hover:bg-[#F4F4F4]">
+                      <td className="px-5 py-3 font-mono tabular-nums text-[#525252] whitespace-nowrap">
                         {formatDate(exp.date)}
                       </td>
                       {!fixedProjectId && (
-                        <td className="px-4 py-3 font-medium text-[#0F0F0F]">
+                        <td className="px-4 py-3 font-medium text-[#0A0A0A]">
                           {p?.name || 'Удалённый объект'}
                         </td>
                       )}
-                      <td className="px-4 py-3 font-medium text-[#0F0F0F] whitespace-nowrap">
+                      <td className="px-4 py-3 font-medium text-[#0A0A0A] whitespace-nowrap">
                         {exp.category}
                       </td>
-                      <td className="px-4 py-3 text-[#6B6B68]">{exp.comment || '—'}</td>
-                      <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-[#0F0F0F] whitespace-nowrap">
+                      <td className="px-4 py-3 text-[#525252]">{exp.comment || '—'}</td>
+                      <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-[#0A0A0A] whitespace-nowrap">
                         {formatCurrency(exp.amount)}
                       </td>
                       <td className="px-5 py-3 text-right">
@@ -712,7 +712,7 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
                           <button
                             type="button"
                             onClick={() => startEditExpense(exp)}
-                            className="flex h-7 w-7 items-center justify-center border border-[#E5E5E2] bg-white text-[#52524F] hover:border-[#0F0F0F] hover:text-[#0F0F0F]"
+                            className="flex h-7 w-7 items-center justify-center border border-[#D4D4D4] bg-white text-[#525252] hover:border-[#0A0A0A] hover:text-[#0A0A0A]"
                             aria-label="Редактировать"
                           >
                             <Pencil className="h-3 w-3" />
@@ -720,7 +720,7 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
                           <button
                             type="button"
                             onClick={() => onDeleteExpense(exp.id)}
-                            className="flex h-7 w-7 items-center justify-center border border-[#E5E5E2] bg-white text-[#6B6B68] hover:border-[#B91C1C] hover:text-[#B91C1C]"
+                            className="flex h-7 w-7 items-center justify-center border border-[#D4D4D4] bg-white text-[#525252] hover:border-[#DC2626] hover:text-[#DC2626]"
                             aria-label="Удалить"
                           >
                             <Trash2 className="h-3 w-3" />
@@ -734,7 +734,7 @@ export const WorklogSection: React.FC<WorklogSectionProps> = ({
             </tbody>
             {filteredExpenses.length > 0 && (
               <tfoot>
-                <tr className="border-t border-[#E5E5E2] bg-[#FAF9F8] text-xs font-semibold text-[#0F0F0F]">
+                <tr className="border-t border-[#0A0A0A] bg-[#F4F4F4] text-xs font-semibold text-[#0A0A0A]">
                   <td colSpan={fixedProjectId ? 3 : 4} className="px-5 py-3">
                     Итого прямые расходы
                   </td>

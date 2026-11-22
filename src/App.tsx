@@ -14,6 +14,7 @@ import {
   AppData,
   DirectExpense,
   Project,
+  ProjectStatus,
   StudioSettings,
   TeamMember,
   UserRole,
@@ -21,11 +22,13 @@ import {
 } from './types';
 import {
   buildClientShareUrl,
+  ClientSnapshot,
   copyToClipboard,
   loadAppData,
   parseClientUrlParams,
   saveAppData,
 } from './utils/storage';
+import { exportProjectFinancialPdf } from './utils/exportProjectPdf';
 import {
   fetchStudioState,
   saveStudioStateRemote,
@@ -193,10 +196,17 @@ export default function App() {
   );
 
   const clientViewProject = useMemo(() => {
-    if (selectedProject) return selectedProject;
-    if (urlClientState.isLockedClient && urlClientState.snapshot) {
-      return urlClientState.snapshot;
+    if (urlClientState.isLockedClient) {
+      if (urlClientState.projectId) {
+        const matched = data.projects.find((p) => p.id === urlClientState.projectId);
+        if (matched) return matched;
+      }
+      if (urlClientState.snapshot) {
+        return urlClientState.snapshot;
+      }
+      return null;
     }
+    if (selectedProject) return selectedProject;
     return data.projects[0] || null;
   }, [selectedProject, urlClientState, data.projects]);
 
@@ -216,6 +226,23 @@ export default function App() {
       }
     },
     [selectedProject, data.projects, notify]
+  );
+
+  const handleExportPdf = useCallback(
+    async (target: Project | ClientSnapshot) => {
+      try {
+        await exportProjectFinancialPdf(target);
+        notify(`PDF-отчёт сформирован (${target.name})`);
+      } catch (err) {
+        notify(
+          err instanceof Error
+            ? `Ошибка создания PDF: ${err.message}`
+            : 'Не удалось сформировать PDF-отчёт',
+          'error'
+        );
+      }
+    },
+    [notify]
   );
 
   // Project CRUD
@@ -240,6 +267,16 @@ export default function App() {
       ...prev,
       projects: prev.projects.map((p) => (p.id === updated.id ? updated : p)),
     }));
+  };
+
+  const handleQuickStatusChange = (projectId: string, status: ProjectStatus) => {
+    setData((prev) => ({
+      ...prev,
+      projects: prev.projects.map((p) =>
+        p.id === projectId ? { ...p, status } : p
+      ),
+    }));
+    notify(`Статус обновлён: ${status}`);
   };
 
   const requestDeleteProject = (project: Project) => {
@@ -366,16 +403,20 @@ export default function App() {
   // Locked Client View (opened via copied link ?view=client&project=...)
   if (urlClientState.isLockedClient) {
     return (
-      <ClientView
-        project={clientViewProject}
-        isLockedClient={true}
-        syncStatus={syncStatus}
-      />
+      <>
+        <ClientView
+          project={clientViewProject}
+          isLockedClient={true}
+          syncStatus={syncStatus}
+          onExportPdf={handleExportPdf}
+        />
+        <Toast toast={toast} onDismiss={() => setToast(null)} />
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F6] text-[#0F0F0F]">
+    <div className="min-h-screen bg-white text-[#0A0A0A]">
       <Header
         role={role}
         activeTab={activeTab}
@@ -415,20 +456,21 @@ export default function App() {
           isLockedClient={false}
           syncStatus={syncStatus}
           onSelectPreviewProject={(id) => setSelectedProjectId(id)}
+          onExportPdf={handleExportPdf}
         />
       ) : (
         <main className="mx-auto max-w-[1440px] px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
           {/* Active Role Context Line */}
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-2 text-xs text-[#525252]">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-[#D4D4D4] pb-3 text-xs text-[#525252]">
             <div>
               Режим:{' '}
-              <span className="font-medium text-[#0F0F0F]">
+              <span className="font-semibold text-[#0A0A0A]">
                 {role === 'director'
                   ? 'Руководитель (полный финансовый и операционный доступ)'
                   : 'Помощник (полный операционный и финансовый доступ)'}
               </span>
             </div>
-            <div className="font-mono text-[11px] tabular-nums">
+            <div className="font-mono text-[11px] font-medium tabular-nums text-[#0A0A0A]">
               Лимит ФОТ: {data.settings.defaultFotLimitPercent}%
             </div>
           </div>
@@ -445,6 +487,7 @@ export default function App() {
               }}
               onDeleteProject={requestDeleteProject}
               onCopyClientLink={(p) => handleCopyClientLink(p)}
+              onExportPdf={handleExportPdf}
               onAddWorklog={handleAddWorklog}
               onUpdateWorklog={handleUpdateWorklog}
               onDeleteWorklog={handleDeleteWorklog}
@@ -467,6 +510,7 @@ export default function App() {
               onDeleteProject={requestDeleteProject}
               onDeleteAllDemo={handleDeleteAllDemo}
               onCopyClientLink={(p) => handleCopyClientLink(p)}
+              onUpdateProjectStatus={handleQuickStatusChange}
               onOpenBackup={() => setBackupModalOpen(true)}
             />
           ) : activeTab === 'worklog' ? (

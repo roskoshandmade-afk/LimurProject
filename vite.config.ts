@@ -6,7 +6,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/limur-studio/',
+    base: '/LimurProject/',
     plugins: [
       react(),
       tailwindcss(),

@@ -113,12 +113,12 @@ export const TeamView: React.FC<TeamViewProps> = ({
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col justify-between gap-4 border-b border-[#E5E5E2] pb-6 md:flex-row md:items-end">
+      <div className="flex flex-col justify-between gap-4 border-b border-[#0A0A0A] pb-6 md:flex-row md:items-end">
         <div>
-          <div className="text-xs text-[#6B6B68]">
+          <div className="text-xs text-[#525252]">
             Справочник позиций без личных имён · Автоматический расчёт окладов по м² и часам
           </div>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#0F0F0F] sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#0A0A0A] sm:text-3xl">
             Команда и лимит ФОТ
           </h1>
         </div>
@@ -128,7 +128,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
             resetForm();
             setShowAddForm(true);
           }}
-          className="flex min-h-[40px] items-center gap-1.5 self-start bg-[#0F0F0F] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#2A2A2A] md:self-auto whitespace-nowrap shrink-0"
+          className="flex min-h-[40px] items-center gap-1.5 self-start bg-[#0A0A0A] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#262626] md:self-auto whitespace-nowrap shrink-0"
         >
           <Plus className="h-3.5 w-3.5" />
           Добавить должность
@@ -136,32 +136,32 @@ export const TeamView: React.FC<TeamViewProps> = ({
       </div>
 
       {/* Summary & Global FOT Limit Settings */}
-      <div className="grid grid-cols-1 gap-px border border-[#E5E5E2] bg-[#E5E5E2] md:grid-cols-3">
-        <div className="bg-white p-5">
-          <div className="text-xs text-[#6B6B68]">Фиксированные оклады в месяц</div>
-          <div className="mt-2 font-mono text-2xl font-semibold tabular-nums text-[#0F0F0F]">
+      <div className="grid grid-cols-1 gap-px border border-[#0A0A0A] bg-[#0A0A0A] md:grid-cols-3">
+        <div className="bg-[#0A0A0A] p-5 text-white">
+          <div className="text-xs text-[#A3A3A3]">Фиксированные оклады в месяц</div>
+          <div className="mt-2 font-mono text-2xl font-semibold tabular-nums text-white">
             {formatCurrency(totalMonthlySalary)}
           </div>
-          <div className="mt-1.5 text-xs text-[#6B6B68]">
+          <div className="mt-1.5 text-xs text-[#A3A3A3]">
             Штатных позиций:{' '}
-            <span className="font-mono tabular-nums text-[#0F0F0F]">
+            <span className="font-mono tabular-nums text-white">
               {team.filter((m) => m.paymentType === 'salary').length}
             </span>
           </div>
         </div>
 
         <div className="bg-white p-5">
-          <div className="text-xs text-[#6B6B68]">Сдельные позиции</div>
-          <div className="mt-2 font-mono text-2xl font-semibold tabular-nums text-[#0F0F0F]">
+          <div className="text-xs text-[#525252]">Сдельные позиции</div>
+          <div className="mt-2 font-mono text-2xl font-semibold tabular-nums text-[#0A0A0A]">
             {team.filter((m) => m.paymentType === 'piecework').length}
           </div>
-          <div className="mt-1.5 text-xs text-[#6B6B68]">
+          <div className="mt-1.5 text-xs text-[#525252]">
             Оплата по факту м² / этапов / выездов
           </div>
         </div>
 
         <div className="bg-white p-5">
-          <div className="text-xs text-[#6B6B68]">Лимит ФОТ по умолчанию (% от КП)</div>
+          <div className="text-xs text-[#525252]">Лимит ФОТ по умолчанию (% от КП)</div>
           <div className="mt-2 flex items-center gap-2">
             <input
               type="number"
@@ -169,19 +169,19 @@ export const TeamView: React.FC<TeamViewProps> = ({
               max="100"
               value={fotLimitInput}
               onChange={(e) => setFotLimitInput(e.target.value)}
-              className="h-9 w-24 border border-[#D4D4D0] bg-white px-3 font-mono text-sm font-semibold tabular-nums text-[#0F0F0F] focus:border-[#0F0F0F] focus:outline-none"
+              className="h-9 w-24 border border-[#0A0A0A] bg-white px-3 font-mono text-sm font-semibold tabular-nums text-[#0A0A0A] focus:outline-none"
             />
-            <span className="font-mono text-sm text-[#6B6B68]">%</span>
+            <span className="font-mono text-sm text-[#525252]">%</span>
             <button
               type="button"
               onClick={saveFotLimit}
-              className="flex h-9 items-center gap-1 bg-[#0F0F0F] px-3 text-xs font-medium text-white transition-colors hover:bg-[#2A2A2A]"
+              className="flex h-9 items-center gap-1 bg-[#0A0A0A] px-3 text-xs font-medium text-white transition-colors hover:bg-[#262626]"
             >
               <Check className="h-3.5 w-3.5" />
               Применить
             </button>
           </div>
-          <div className="mt-1.5 text-[11px] text-[#6B6B68]">
+          <div className="mt-1.5 text-[11px] text-[#525252]">
             При превышении порога проект подсвечивается в рисках
           </div>
         </div>
@@ -191,16 +191,16 @@ export const TeamView: React.FC<TeamViewProps> = ({
       {showAddForm && (
         <form
           onSubmit={handleSubmit}
-          className="border border-[#0F0F0F] bg-white p-6"
+          className="border border-[#0A0A0A] bg-white p-6"
         >
-          <div className="flex items-center justify-between border-b border-[#E5E5E2] pb-3">
-            <h2 className="text-sm font-semibold text-[#0F0F0F]">
+          <div className="flex items-center justify-between border-b border-[#D4D4D4] pb-3">
+            <h2 className="text-sm font-semibold text-[#0A0A0A]">
               {editingId ? 'Редактировать позицию команды' : 'Новая позиция / роль'}
             </h2>
             <button
               type="button"
               onClick={resetForm}
-              className="text-[#6B6B68] hover:text-[#0F0F0F]"
+              className="text-[#525252] hover:text-[#0A0A0A]"
               aria-label="Закрыть форму"
             >
               <X className="h-4 w-4" />
@@ -319,17 +319,17 @@ export const TeamView: React.FC<TeamViewProps> = ({
             )}
           </div>
 
-          <div className="mt-5 flex items-center justify-end gap-3 border-t border-[#E5E5E2] pt-4">
+          <div className="mt-5 flex items-center justify-end gap-3 border-t border-[#D4D4D4] pt-4">
             <button
               type="button"
               onClick={resetForm}
-              className="min-h-[40px] border border-[#D4D4D0] bg-white px-4 text-xs font-medium text-[#0F0F0F] hover:bg-[#F6F6F5]"
+              className="min-h-[40px] border border-[#0A0A0A] bg-white px-4 text-xs font-medium text-[#0A0A0A] hover:bg-[#F4F4F4]"
             >
               Отмена
             </button>
             <button
               type="submit"
-              className="min-h-[40px] bg-[#0F0F0F] px-5 text-xs font-medium text-white hover:bg-[#2A2A2A]"
+              className="min-h-[40px] bg-[#0A0A0A] px-5 text-xs font-medium text-white hover:bg-[#262626]"
             >
               {editingId ? 'Сохранить' : 'Добавить'}
             </button>
@@ -338,10 +338,10 @@ export const TeamView: React.FC<TeamViewProps> = ({
       )}
 
       {/* Team Directory Table */}
-      <div className="overflow-x-auto border border-[#E5E5E2] bg-white">
+      <div className="overflow-x-auto border border-[#0A0A0A] bg-white">
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-[#E5E5E2] bg-[#FAF9F8] text-[11px] font-medium text-[#6B6B68]">
+            <tr className="border-b border-[#0A0A0A] bg-[#F4F4F4] text-[11px] font-medium text-[#525252]">
               <th className="px-5 py-3.5">Код</th>
               <th className="px-4 py-3.5">Должность / Роль</th>
               <th className="px-4 py-3.5">Статья затрат</th>
@@ -350,29 +350,29 @@ export const TeamView: React.FC<TeamViewProps> = ({
               <th className="px-5 py-3.5 text-right">Действия</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#E5E5E2]">
+          <tbody className="divide-y divide-[#D4D4D4]">
             {team.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-5 py-10 text-center text-xs text-[#6B6B68]">
+                <td colSpan={6} className="px-5 py-10 text-center text-xs text-[#525252]">
                   Список должностей пуст. Добавьте первую позицию команды.
                 </td>
               </tr>
             ) : (
               team.map((m) => (
-                <tr key={m.id} className="hover:bg-[#FAF9F8]">
-                  <td className="px-5 py-3.5 font-mono text-xs font-semibold text-[#0F0F0F]">
+                <tr key={m.id} className="hover:bg-[#F4F4F4]">
+                  <td className="px-5 py-3.5 font-mono text-xs font-semibold text-[#0A0A0A]">
                     {m.code}
                   </td>
-                  <td className="px-4 py-3.5 text-sm font-medium text-[#0F0F0F]">
+                  <td className="px-4 py-3.5 text-sm font-medium text-[#0A0A0A]">
                     {m.roleTitle}
                   </td>
-                  <td className="px-4 py-3.5 text-xs text-[#6B6B68]">{m.costGroup}</td>
-                  <td className="px-4 py-3.5 text-xs text-[#0F0F0F]">
+                  <td className="px-4 py-3.5 text-xs text-[#525252]">{m.costGroup}</td>
+                  <td className="px-4 py-3.5 text-xs text-[#0A0A0A]">
                     {m.paymentType === 'salary'
                       ? `Оклад · деление по ${m.allocationBasis === 'area' ? 'м²' : 'часам'}`
                       : `Сдельная · за ${m.pieceworkUnit}`}
                   </td>
-                  <td className="px-4 py-3.5 text-right font-mono text-xs font-semibold tabular-nums text-[#0F0F0F]">
+                  <td className="px-4 py-3.5 text-right font-mono text-xs font-semibold tabular-nums text-[#0A0A0A]">
                     {m.paymentType === 'salary'
                       ? `${formatCurrency(m.monthlySalary)} / мес`
                       : `${formatCurrency(m.pieceworkRate)} / ${m.pieceworkUnit}`}
@@ -382,7 +382,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
                       <button
                         type="button"
                         onClick={() => startEdit(m)}
-                        className="flex h-8 w-8 items-center justify-center border border-[#E5E5E2] bg-white text-[#52524F] hover:border-[#0F0F0F] hover:text-[#0F0F0F]"
+                        className="flex h-8 w-8 items-center justify-center border border-[#D4D4D4] bg-white text-[#525252] hover:border-[#0A0A0A] hover:text-[#0A0A0A]"
                         aria-label="Редактировать"
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -390,7 +390,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
                       <button
                         type="button"
                         onClick={() => onDeleteMember(m)}
-                        className="flex h-8 w-8 items-center justify-center border border-[#E5E5E2] bg-white text-[#6B6B68] hover:border-[#B91C1C] hover:text-[#B91C1C]"
+                        className="flex h-8 w-8 items-center justify-center border border-[#D4D4D4] bg-white text-[#525252] hover:border-[#DC2626] hover:text-[#DC2626]"
                         aria-label="Удалить"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

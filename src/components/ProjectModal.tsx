@@ -202,16 +202,16 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       aria-modal="true"
       aria-labelledby="project-modal-title"
     >
-      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col border border-[#E5E5E2] bg-white">
+      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col border border-[#0A0A0A] bg-white">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#E5E5E2] px-6 py-4">
-          <h2 id="project-modal-title" className="text-base font-semibold tracking-tight text-[#0F0F0F]">
+        <div className="flex items-center justify-between border-b border-[#0A0A0A] px-6 py-4">
+          <h2 id="project-modal-title" className="text-base font-semibold tracking-tight text-[#0A0A0A]">
             {editingProject ? 'Редактирование объекта' : 'Новый дизайн-проект'}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center text-[#6B6B68] hover:bg-[#F6F6F5] hover:text-[#0F0F0F]"
+            className="flex h-8 w-8 items-center justify-center text-[#525252] hover:bg-[#F4F4F4] hover:text-[#0A0A0A]"
             aria-label="Закрыть"
           >
             <X className="h-4 w-4" />
@@ -222,14 +222,14 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5">
           <div className="space-y-6">
             {error && (
-              <div className="border border-[#FECACA] bg-[#FEF2F2] px-4 py-2.5 text-xs font-medium text-[#991B1B]">
+              <div className="border border-[#DC2626] bg-[#FEF2F2] px-4 py-2.5 text-xs font-medium text-[#DC2626]">
                 {error}
               </div>
             )}
 
             {/* Passport */}
             <div className="space-y-4">
-              <div className="text-xs font-semibold text-[#0F0F0F]">01. Паспорт объекта</div>
+              <div className="text-xs font-semibold text-[#0A0A0A]">01. Паспорт объекта</div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label className="mb-1 block text-xs text-[#6B6B68]">Название проекта *</label>
@@ -352,13 +352,13 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
             </div>
 
             {/* Payment Stages */}
-            <div className="space-y-3 border-t border-[#E5E5E2] pt-5">
+            <div className="space-y-3 border-t border-[#D4D4D4] pt-5">
               <div className="flex items-center justify-between">
-                <div className="text-xs font-semibold text-[#0F0F0F]">03. Этапы оплаты по КП</div>
+                <div className="text-xs font-semibold text-[#0A0A0A]">03. Этапы оплаты по КП</div>
                 <button
                   type="button"
                   onClick={addPaymentStage}
-                  className="flex items-center gap-1 text-xs font-medium text-[#0F0F0F] underline-offset-4 hover:underline"
+                  className="flex items-center gap-1 text-xs font-medium text-[#0A0A0A] underline-offset-4 hover:underline"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Добавить этап
@@ -368,7 +368,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                 {paymentStages.map((ps, idx) => (
                   <div
                     key={ps.id}
-                    className="grid grid-cols-1 gap-2 border border-[#E5E5E2] bg-[#FAF9F8] p-3 sm:grid-cols-12 sm:items-center"
+                    className="grid grid-cols-1 gap-2 border border-[#D4D4D4] bg-[#F4F4F4] p-3 sm:grid-cols-12 sm:items-center"
                   >
                     <div className="sm:col-span-6">
                       <input
@@ -376,7 +376,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                         value={ps.title}
                         onChange={(e) => updatePaymentStage(ps.id, { title: e.target.value })}
                         placeholder={`Этап ${idx + 1}`}
-                        className="h-9 w-full border border-[#D4D4D0] bg-white px-2.5 text-xs text-[#0F0F0F] focus:border-[#0F0F0F] focus:outline-none"
+                        className="h-9 w-full border border-[#D4D4D4] bg-white px-2.5 text-xs text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none"
                       />
                     </div>
                     <div className="sm:col-span-3">
@@ -389,7 +389,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                           updatePaymentStage(ps.id, { amount: Number(e.target.value) || 0 })
                         }
                         placeholder="Сумма ₽"
-                        className="h-9 w-full border border-[#D4D4D0] bg-white px-2.5 font-mono text-xs tabular-nums text-[#0F0F0F] focus:border-[#0F0F0F] focus:outline-none"
+                        className="h-9 w-full border border-[#D4D4D4] bg-white px-2.5 font-mono text-xs tabular-nums text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none"
                       />
                     </div>
                     <div className="flex items-center gap-2 sm:col-span-3">
@@ -397,12 +397,12 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                         type="date"
                         value={ps.dueDate}
                         onChange={(e) => updatePaymentStage(ps.id, { dueDate: e.target.value })}
-                        className="h-9 flex-1 border border-[#D4D4D0] bg-white px-2 font-mono text-[11px] text-[#0F0F0F] focus:border-[#0F0F0F] focus:outline-none"
+                        className="h-9 flex-1 border border-[#D4D4D4] bg-white px-2 font-mono text-[11px] text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => removePaymentStage(ps.id)}
-                        className="flex h-9 w-9 shrink-0 items-center justify-center border border-[#D4D4D0] bg-white text-[#6B6B68] hover:border-[#B91C1C] hover:text-[#B91C1C]"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center border border-[#D4D4D4] bg-white text-[#525252] hover:border-[#DC2626] hover:text-[#DC2626]"
                         aria-label="Удалить этап оплаты"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -414,8 +414,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
             </div>
 
             {/* Team Assignment */}
-            <div className="space-y-3 border-t border-[#E5E5E2] pt-5">
-              <div className="text-xs font-semibold text-[#0F0F0F]">04. Команда проекта (роли)</div>
+            <div className="space-y-3 border-t border-[#D4D4D4] pt-5">
+              <div className="text-xs font-semibold text-[#0A0A0A]">04. Команда проекта (роли)</div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {team.map((member) => {
                   const checked = teamIds.includes(member.id);
@@ -424,8 +424,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                       key={member.id}
                       className={`flex cursor-pointer items-center justify-between border px-3 py-2.5 text-xs transition-colors ${
                         checked
-                          ? 'border-[#0F0F0F] bg-[#FAF9F8] text-[#0F0F0F]'
-                          : 'border-[#E5E5E2] bg-white text-[#6B6B68]'
+                          ? 'border-[#0A0A0A] bg-[#F4F4F4] text-[#0A0A0A]'
+                          : 'border-[#D4D4D4] bg-white text-[#525252]'
                       }`}
                     >
                       <span className="flex items-center gap-2.5">
@@ -433,11 +433,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleTeamMember(member.id)}
-                          className="h-4 w-4 accent-[#0F0F0F]"
+                          className="h-4 w-4 accent-[#0A0A0A]"
                         />
-                        <span className="font-medium text-[#0F0F0F]">{member.roleTitle}</span>
+                        <span className="font-medium text-[#0A0A0A]">{member.roleTitle}</span>
                       </span>
-                      <span className="font-mono text-[11px] text-[#6B6B68]">{member.code}</span>
+                      <span className="font-mono text-[11px] text-[#525252]">{member.code}</span>
                     </label>
                   );
                 })}
@@ -445,13 +445,13 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
             </div>
 
             {!editingProject && (
-              <div className="border-t border-[#E5E5E2] pt-4">
-                <label className="flex cursor-pointer items-center gap-2.5 text-xs text-[#0F0F0F]">
+              <div className="border-t border-[#D4D4D4] pt-4">
+                <label className="flex cursor-pointer items-center gap-2.5 text-xs text-[#0A0A0A]">
                   <input
                     type="checkbox"
                     checked={useStandardWorkStages}
                     onChange={(e) => setUseStandardWorkStages(e.target.checked)}
-                    className="h-4 w-4 accent-[#0F0F0F]"
+                    className="h-4 w-4 accent-[#0A0A0A]"
                   />
                   <span>
                     Создать базовый набор рабочих подэтапов для диаграммы Ганта (Замеры → Планировка → ТЗ → 3D → РД)
@@ -462,17 +462,17 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           </div>
 
           {/* Footer Buttons */}
-          <div className="mt-6 flex items-center justify-end gap-3 border-t border-[#E5E5E2] pt-5">
+          <div className="mt-6 flex items-center justify-end gap-3 border-t border-[#D4D4D4] pt-5">
             <button
               type="button"
               onClick={onClose}
-              className="min-h-[40px] border border-[#D4D4D0] bg-white px-5 py-2 text-xs font-medium text-[#0F0F0F] transition-colors hover:bg-[#F6F6F5]"
+              className="min-h-[40px] border border-[#0A0A0A] bg-white px-5 py-2 text-xs font-medium text-[#0A0A0A] transition-colors hover:bg-[#F4F4F4]"
             >
               Отмена
             </button>
             <button
               type="submit"
-              className="min-h-[40px] bg-[#0F0F0F] px-6 py-2 text-xs font-medium text-white transition-colors hover:bg-[#2A2A2A]"
+              className="min-h-[40px] bg-[#0A0A0A] px-6 py-2 text-xs font-medium text-white transition-colors hover:bg-[#262626]"
             >
               {editingProject ? 'Сохранить изменения' : 'Создать проект'}
             </button>

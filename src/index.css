@@ -8,15 +8,15 @@
 @layer base {
   html {
     font-family: var(--font-sans);
-    background-color: #F7F7F6;
-    color: #0F0F0F;
+    background-color: #FFFFFF;
+    color: #0A0A0A;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    background-color: #F7F7F6;
-    color: #0F0F0F;
+    background-color: #FFFFFF;
+    color: #0A0A0A;
   }
 
   .tabular-nums {
@@ -29,24 +29,24 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #F7F7F6;
+    background: #F4F4F4;
   }
   ::-webkit-scrollbar-thumb {
-    background: #D4D4D4;
+    background: #A3A3A3;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #0F0F0F;
+    background: #0A0A0A;
   }
 }
 
-/* Architectural diagonal hatch for Gantt Plan layer */
+/* High-contrast architectural diagonal hatch for Gantt Plan layer & Planned Budget bars */
 .gantt-plan-hatch {
-  background-color: #F7F7F6;
+  background-color: #FFFFFF;
   background-image: repeating-linear-gradient(
     -45deg,
     transparent,
-    transparent 4px,
-    rgba(15, 15, 15, 0.08) 4px,
-    rgba(15, 15, 15, 0.08) 5px
+    transparent 3px,
+    rgba(10, 10, 10, 0.24) 3px,
+    rgba(10, 10, 10, 0.24) 4px
   );
 }

@@ -314,6 +314,8 @@ export interface StudioPulseSummary {
   risks: RiskItem[];
   projectFinances: Record<string, ProjectFinanceSummary>;
   projectRiskLevel: Record<string, 'ok' | 'warning' | 'critical'>;
+  projectAtRisk: Record<string, boolean>;
+  projectRiskReasons: Record<string, string[]>;
 }
 
 export function calculateStudioPulse(data: AppData): StudioPulseSummary {
@@ -334,6 +336,8 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
 
   const projectFinances: Record<string, ProjectFinanceSummary> = {};
   const projectRiskLevel: Record<string, 'ok' | 'warning' | 'critical'> = {};
+  const projectAtRisk: Record<string, boolean> = {};
+  const projectRiskReasons: Record<string, string[]> = {};
   const studioGroupTotals = new Map<CostRoleGroup, number>();
   const risks: RiskItem[] = [];
 
@@ -345,10 +349,22 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
     }
   };
 
+  const flagProjectRisk = (projectId: string, reason: string) => {
+    projectAtRisk[projectId] = true;
+    if (!projectRiskReasons[projectId]) {
+      projectRiskReasons[projectId] = [];
+    }
+    if (!projectRiskReasons[projectId].includes(reason)) {
+      projectRiskReasons[projectId].push(reason);
+    }
+  };
+
   for (const project of data.projects) {
     const fin = calculateProjectFinance(data, project);
     projectFinances[project.id] = fin;
     projectRiskLevel[project.id] = 'ok';
+    projectAtRisk[project.id] = false;
+    projectRiskReasons[project.id] = [];
 
     totalContract += fin.contractTotal;
     totalPaid += fin.paidTotal;
@@ -370,9 +386,10 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
       pausedProjectsCount += 1;
     }
 
-    // Risk 1: Over FOT limit
+    // Risk 1: Over FOT limit (перерасход бюджета на команду)
     if (fin.isOverFotLimit) {
       elevateRisk(project.id, 'critical');
+      flagProjectRisk(project.id, `Перерасход ФОТ (${fin.fotPercentOfContract.toFixed(0)}%)`);
       risks.push({
         id: `risk_fot_${project.id}`,
         severity: 'critical',
@@ -386,6 +403,7 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
     // Risk 2: Negative margin or cash deficit
     if (fin.isNegativeMargin) {
       elevateRisk(project.id, 'critical');
+      flagProjectRisk(project.id, 'Уход в минус по бюджету');
       risks.push({
         id: `risk_margin_${project.id}`,
         severity: 'critical',
@@ -396,6 +414,7 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
       });
     } else if (fin.isCashNegative && project.status !== 'Сдан') {
       elevateRisk(project.id, 'warning');
+      flagProjectRisk(project.id, 'Кассовый разрыв');
       risks.push({
         id: `risk_cash_${project.id}`,
         severity: 'warning',
@@ -406,10 +425,18 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
       });
     }
 
-    // Risk 3: Overdue unpaid payment stages
+    // Risk 3: Overdue unpaid payment stages (неоплаченный вовремя этап КП)
     const overduePayments = project.paymentStages.filter(
       (s) => !s.isPaid && s.dueDate && s.dueDate < today && project.status !== 'Заморожен'
     );
+    if (overduePayments.length > 0) {
+      flagProjectRisk(
+        project.id,
+        overduePayments.length === 1
+          ? 'Просрочка оплаты КП'
+          : `Просрочка оплаты (${overduePayments.length} эт.)`
+      );
+    }
     for (const ps of overduePayments) {
       elevateRisk(project.id, 'warning');
       risks.push({
@@ -422,7 +449,7 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
       });
     }
 
-    // Risk 4: Overdue or studio-delayed work stages
+    // Risk 4: Overdue or studio-delayed work stages (просрочка по вине студии)
     const overdueTasks = project.workStages.filter(
       (ws) =>
         ws.progress < 100 &&
@@ -433,6 +460,14 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
       const studioDelays = overdueTasks.filter(
         (t) => t.delayReason === 'studio' || (t.delayReason === 'none' && t.planEnd && t.planEnd < today)
       ).length;
+      if (studioDelays > 0) {
+        flagProjectRisk(
+          project.id,
+          studioDelays === 1
+            ? 'Просрочка студии'
+            : `Просрочка студии (${studioDelays})`
+        );
+      }
       elevateRisk(project.id, studioDelays > 0 ? 'critical' : 'warning');
       risks.push({
         id: `risk_task_${project.id}`,
@@ -493,7 +528,7 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
     .filter((item) => item.amount > 0)
     .sort((a, b) => b.amount - a.amount);
 
-  const riskProjectsCount = Object.values(projectRiskLevel).filter((r) => r !== 'ok').length;
+  const riskProjectsCount = Object.values(projectAtRisk).filter(Boolean).length;
   const totalOutflow = totalCosts + unallocatedCurrentMonthSalary;
   const cashBalance = totalPaid - totalOutflow;
   const totalMargin = totalContract - totalOutflow;
@@ -521,5 +556,7 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
     risks,
     projectFinances,
     projectRiskLevel,
+    projectAtRisk,
+    projectRiskReasons,
   };
 }

@@ -116,7 +116,7 @@ export const ArchitecturalDonutChart: React.FC<ArchitecturalDonutChartProps> = (
           <div className="max-w-full truncate text-[10px] font-medium text-[#525252]">
             {activeSlice ? activeSlice.label : centerLabel}
           </div>
-          <div className="mt-0.5 font-mono text-sm font-semibold tabular-nums text-[#0F0F0F]">
+          <div className="mt-0.5 font-mono text-sm font-bold tabular-nums text-[#0A0A0A]">
             {activeSlice ? formatCurrency(activeSlice.value) : centerValue}
           </div>
           <div className="mt-0.5 font-mono text-[11px] tabular-nums text-[#525252]">
@@ -126,7 +126,7 @@ export const ArchitecturalDonutChart: React.FC<ArchitecturalDonutChartProps> = (
       </div>
 
       {/* Architectural Breakdown Table */}
-      <div className="min-w-0 flex-1 divide-y divide-[#E5E5E5] border-t border-b border-[#E5E5E5]">
+      <div className="min-w-0 flex-1 divide-y divide-[#D4D4D4] border-t border-b border-[#0A0A0A]">
         {validSlices.map((slice) => {
           const isActive = hoveredId === slice.id;
           return (
@@ -135,7 +135,7 @@ export const ArchitecturalDonutChart: React.FC<ArchitecturalDonutChartProps> = (
               onMouseEnter={() => setHoveredId(slice.id)}
               onMouseLeave={() => setHoveredId(null)}
               className={`flex cursor-default items-center justify-between gap-3 py-2.5 text-xs transition-colors ${
-                isActive ? 'bg-[#F7F7F6]' : ''
+                isActive ? 'bg-[#F4F4F4]' : ''
               }`}
             >
               <div className="flex min-w-0 items-center gap-2.5">
@@ -144,14 +144,14 @@ export const ArchitecturalDonutChart: React.FC<ArchitecturalDonutChartProps> = (
                   style={{ backgroundColor: slice.color }}
                 />
                 <div className="min-w-0">
-                  <div className="truncate font-medium text-[#0F0F0F]">{slice.label}</div>
+                  <div className="truncate font-semibold text-[#0A0A0A]">{slice.label}</div>
                   {slice.sublabel && (
-                    <div className="truncate text-[11px] text-[#737373]">{slice.sublabel}</div>
+                    <div className="truncate text-[11px] text-[#525252]">{slice.sublabel}</div>
                   )}
                 </div>
               </div>
               <div className="flex shrink-0 items-baseline gap-3 font-mono tabular-nums">
-                <span className="font-semibold text-[#0F0F0F]">
+                <span className="font-bold text-[#0A0A0A]">
                   {formatCurrency(slice.value)}
                 </span>
                 <span className="w-11 text-right text-[11px] text-[#525252]">

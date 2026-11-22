@@ -53,10 +53,10 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
       aria-modal="true"
       aria-labelledby="backup-modal-title"
     >
-      <div className="w-full max-w-lg border border-[#E5E5E2] bg-white p-6">
-        <div className="flex items-start justify-between gap-4 border-b border-[#E5E5E2] pb-4">
+      <div className="w-full max-w-lg border border-[#0A0A0A] bg-white p-6">
+        <div className="flex items-start justify-between gap-4 border-b border-[#0A0A0A] pb-4">
           <div>
-            <h2 id="backup-modal-title" className="text-lg font-semibold tracking-tight text-[#0F0F0F]">
+            <h2 id="backup-modal-title" className="text-lg font-semibold tracking-tight text-[#0A0A0A]">
               Данные и резервные копии
             </h2>
             <p className="mt-1 text-xs text-[#525252]">
@@ -66,29 +66,29 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center text-[#6B6B68] transition-colors hover:bg-[#F6F6F5] hover:text-[#0F0F0F]"
+            className="flex h-8 w-8 items-center justify-center text-[#525252] transition-colors hover:bg-[#F4F4F4] hover:text-[#0A0A0A]"
             aria-label="Закрыть"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-4 border-b border-[#E5E5E2] pb-5">
+        <div className="mt-5 grid grid-cols-3 gap-4 border-b border-[#D4D4D4] pb-5">
           <div>
-            <div className="text-xs text-[#6B6B68]">Проекты</div>
-            <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#0F0F0F]">
+            <div className="text-xs text-[#525252]">Проекты</div>
+            <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#0A0A0A]">
               {data.projects.length}
             </div>
           </div>
           <div>
-            <div className="text-xs text-[#6B6B68]">Позиции команды</div>
-            <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#0F0F0F]">
+            <div className="text-xs text-[#525252]">Позиции команды</div>
+            <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#0A0A0A]">
               {data.team.length}
             </div>
           </div>
           <div>
-            <div className="text-xs text-[#6B6B68]">Записи журнала</div>
-            <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#0F0F0F]">
+            <div className="text-xs text-[#525252]">Записи журнала</div>
+            <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#0A0A0A]">
               {data.worklogs.length + data.expenses.length}
             </div>
           </div>
@@ -102,7 +102,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                 exportDataToJson(data);
                 onNotify('JSON-резервная копия сохранена');
               }}
-              className="flex min-h-[42px] flex-1 items-center justify-center gap-2 bg-[#0F0F0F] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#2A2A2A] whitespace-nowrap"
+              className="flex min-h-[42px] flex-1 items-center justify-center gap-2 bg-[#0A0A0A] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#262626] whitespace-nowrap"
             >
               <Download className="h-3.5 w-3.5" />
               Экспорт JSON
@@ -111,7 +111,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex min-h-[42px] flex-1 items-center justify-center gap-2 border border-[#0F0F0F] bg-white px-4 py-2 text-xs font-medium text-[#0F0F0F] transition-colors hover:bg-[#F6F6F5] whitespace-nowrap"
+              className="flex min-h-[42px] flex-1 items-center justify-center gap-2 border border-[#0A0A0A] bg-white px-4 py-2 text-xs font-medium text-[#0A0A0A] transition-colors hover:bg-[#F4F4F4] whitespace-nowrap"
             >
               <Upload className="h-3.5 w-3.5" />
               Импорт JSON
@@ -125,9 +125,9 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
             />
           </div>
 
-          <div className="border-t border-[#E5E5E2] pt-4">
-            <div className="text-xs font-medium text-[#0F0F0F]">Управление демо-данными</div>
-            <p className="mt-1 text-xs leading-relaxed text-[#6B6B68]">
+          <div className="border-t border-[#D4D4D4] pt-4">
+            <div className="text-xs font-medium text-[#0A0A0A]">Управление демо-данными</div>
+            <p className="mt-1 text-xs leading-relaxed text-[#525252]">
               Вы можете очистить все проекты и журнал для работы с чистого листа (сохранив стандартный справочник ролей) или вернуть демонстрационный шаблон.
             </p>
 
@@ -136,7 +136,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setConfirmClear(true)}
-                  className="flex min-h-[40px] flex-1 items-center justify-center gap-2 border border-[#DC2626] bg-white px-4 py-2 text-xs font-medium text-[#B91C1C] transition-colors hover:bg-[#FEF2F2] whitespace-nowrap"
+                  className="flex min-h-[40px] flex-1 items-center justify-center gap-2 border border-[#DC2626] bg-white px-4 py-2 text-xs font-medium text-[#DC2626] transition-colors hover:bg-[#FEF2F2] whitespace-nowrap"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Очистить демо / Начать с нуля
@@ -148,15 +148,15 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                     onNotify('Загружен демонстрационный шаблон');
                     onClose();
                   }}
-                  className="flex min-h-[40px] flex-1 items-center justify-center gap-2 border border-[#D4D4D0] bg-white px-4 py-2 text-xs font-medium text-[#0F0F0F] transition-colors hover:bg-[#F6F6F5] whitespace-nowrap"
+                  className="flex min-h-[40px] flex-1 items-center justify-center gap-2 border border-[#0A0A0A] bg-white px-4 py-2 text-xs font-medium text-[#0A0A0A] transition-colors hover:bg-[#F4F4F4] whitespace-nowrap"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   Загрузить [ДЕМО] шаблон
                 </button>
               </div>
             ) : (
-              <div className="mt-3 border border-[#FECACA] bg-[#FEF2F2] p-3">
-                <p className="text-xs font-medium text-[#991B1B]">
+              <div className="mt-3 border border-[#DC2626] bg-[#FEF2F2] p-3">
+                <p className="text-xs font-medium text-[#DC2626]">
                   Удалить все текущие проекты, записи выработки и чеки?
                 </p>
                 <div className="mt-3 flex items-center gap-2">
@@ -168,14 +168,14 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                       onNotify('Все данные очищены. Можно создавать проекты с нуля');
                       onClose();
                     }}
-                    className="min-h-[36px] bg-[#B91C1C] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#991B1B]"
+                    className="min-h-[36px] bg-[#DC2626] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#B91C1C]"
                   >
                     Да, начать с нуля
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmClear(false)}
-                    className="min-h-[36px] border border-[#D4D4D0] bg-white px-3 py-1.5 text-xs font-medium text-[#0F0F0F] hover:bg-[#F6F6F5]"
+                    className="min-h-[36px] border border-[#0A0A0A] bg-white px-3 py-1.5 text-xs font-medium text-[#0A0A0A] hover:bg-[#F4F4F4]"
                   >
                     Отмена
                   </button>

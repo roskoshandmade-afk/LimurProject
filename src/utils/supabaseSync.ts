@@ -1,23 +1,10 @@
-import { createClient, RealtimeChannel } from '@supabase/supabase-js';
+import { RealtimeChannel } from '@supabase/supabase-js';
+import { supabase } from '../supabaseClient';
 import { AppData } from '../types';
 
 export type SyncStatus = 'connecting' | 'online' | 'syncing' | 'offline';
 
-const DEFAULT_SUPABASE_URL = 'https://iufvrdvwrcwyfokdvpeb.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_7lVcUR1YgUpediExSLBa1w_beRAcd4f';
-
-const SUPABASE_URL =
-  (import.meta.env.VITE_SUPABASE_URL as string | undefined) || DEFAULT_SUPABASE_URL;
-const SUPABASE_ANON_KEY =
-  (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) || DEFAULT_SUPABASE_ANON_KEY;
-
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
-    },
-  },
-});
+export { supabase };
 
 const TABLE_NAME = 'studio_state';
 const ROW_ID = 'main';
@@ -49,6 +36,10 @@ export async function fetchStudioState(): Promise<{
   data: AppData | null;
   error?: string;
 }> {
+  if (!supabase) {
+    return { ok: false, data: null, error: 'Supabase client unavailable' };
+  }
+
   try {
     const { data, error } = await supabase
       .from(TABLE_NAME)
@@ -78,6 +69,10 @@ export async function saveStudioStateRemote(data: AppData): Promise<{
   ok: boolean;
   error?: string;
 }> {
+  if (!supabase) {
+    return { ok: false, error: 'Supabase client unavailable' };
+  }
+
   try {
     const { error } = await supabase
       .from(TABLE_NAME)
@@ -105,34 +100,57 @@ export function subscribeStudioState(
   onRemoteData: (data: AppData) => void,
   onChannelStatus?: (connected: boolean) => void
 ): () => void {
-  const channel: RealtimeChannel = supabase
-    .channel('supabase_realtime:studio_state:main')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: TABLE_NAME,
-        filter: `id=eq.${ROW_ID}`,
-      },
-      (payload) => {
-        const nextRow = payload.new as { id?: string; payload?: unknown } | undefined;
-        if (!nextRow || !nextRow.payload) return;
-        const normalized = normalizePayload(nextRow.payload);
-        if (normalized) {
-          onRemoteData(normalized);
+  if (!supabase) {
+    onChannelStatus?.(false);
+    return () => {};
+  }
+
+  let channel: RealtimeChannel | null = null;
+
+  try {
+    channel = supabase
+      .channel('supabase_realtime:studio_state:main')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: TABLE_NAME,
+          filter: `id=eq.${ROW_ID}`,
+        },
+        (payload) => {
+          try {
+            const nextRow = payload.new as { id?: string; payload?: unknown } | undefined;
+            if (!nextRow || !nextRow.payload) return;
+            const normalized = normalizePayload(nextRow.payload);
+            if (normalized) {
+              onRemoteData(normalized);
+            }
+          } catch (err) {
+            console.warn('[LIMUR STUDIO OS] Ignored malformed realtime payload:', err);
+          }
         }
-      }
-    )
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        onChannelStatus?.(true);
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-        onChannelStatus?.(false);
-      }
-    });
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          onChannelStatus?.(true);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          onChannelStatus?.(false);
+        }
+      });
+  } catch (err) {
+    console.warn('[LIMUR STUDIO OS] Realtime subscription unavailable, continuing locally:', err);
+    onChannelStatus?.(false);
+    return () => {};
+  }
 
   return () => {
-    void supabase.removeChannel(channel);
+    try {
+      if (supabase && channel) {
+        void supabase.removeChannel(channel);
+      }
+    } catch {
+      // Safe cleanup ignore
+    }
   };
 }

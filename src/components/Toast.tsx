@@ -16,13 +16,13 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
   if (!toast) return null;
 
   return (
-    <div className="fixed right-4 bottom-4 z-50 max-w-sm border border-[#0F0F0F] bg-[#0F0F0F] px-4 py-3 text-white shadow-sm">
+    <div className="fixed right-4 bottom-4 z-50 max-w-sm border border-[#0A0A0A] bg-[#0A0A0A] px-4 py-3 text-white">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 text-xs font-medium leading-snug">
           {toast.type === 'error' ? (
-            <AlertCircle className="h-4 w-4 shrink-0 text-[#F87171]" />
+            <AlertCircle className="h-4 w-4 shrink-0 text-[#DC2626]" />
           ) : (
-            <Check className="h-4 w-4 shrink-0 text-white" />
+            <Check className="h-4 w-4 shrink-0 text-[#4ADE80]" />
           )}
           <span>{toast.text}</span>
         </div>
