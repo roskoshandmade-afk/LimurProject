@@ -3,6 +3,8 @@ import {
   CostBreakdownItem,
   CostRoleGroup,
   Project,
+  ProjectCostLine,
+  ProjectCostRole,
   ProjectFinanceSummary,
   RiskItem,
   SalaryAllocationDetail,
@@ -74,12 +76,41 @@ export function getProjectProgress(project: Project): number {
   return Math.round(sum / project.workStages.length);
 }
 
+export function mapCostRoleToGroup(role: ProjectCostRole): CostRoleGroup {
+  switch (role) {
+    case 'Дизайнер':
+      return 'Дизайнер';
+    case 'Визуализатор':
+      return 'Визуализатор';
+    case 'Чертёжник':
+      return 'Чертёжник';
+    case 'Замерщик':
+      return 'Замеры';
+    case 'Комплектатор':
+      return 'Комплектатор';
+    case 'Бензин и печать альбомов':
+      return 'Печать и логистика';
+  }
+}
+
 /**
- * Calculates monthly salary allocations for a specific project across all months.
- * Formula: For each salaried employee in a given month (YYYY-MM),
- * their monthly salary is distributed across projects proportionally to their
- * logged м² (if allocationBasis === 'area') or hours (if allocationBasis === 'hours')
- * across ALL projects during that month.
+ * Computes effective budget amount for a single ProjectCostLine.
+ * For salaried staff (payMode === 'salary'), automatically computes:
+ *   monthlySalary * (workedUnits / monthlyCapacityUnits)
+ */
+export function getCostLineEffectiveBudget(line: ProjectCostLine): number {
+  if (line.payMode === 'salary') {
+    const salary = Math.max(0, Number(line.monthlySalary) || 0);
+    const worked = Math.max(0, Number(line.workedUnits) || 0);
+    const capacity = Math.max(1, Number(line.monthlyCapacityUnits) || 22);
+    return Math.round(salary * (worked / capacity));
+  }
+  return Math.max(0, Number(line.budgetAmount) || 0);
+}
+
+/**
+ * Calculates monthly salary allocations for a specific project across all months
+ * from the studio worklog journal.
  */
 export function calculateProjectSalaryAllocations(
   data: AppData,
@@ -88,9 +119,7 @@ export function calculateProjectSalaryAllocations(
   const salariedMembers = data.team.filter((m) => m.paymentType === 'salary' && m.monthlySalary > 0);
   const memberMap = new Map(salariedMembers.map((m) => [m.id, m]));
 
-  // Aggregate total studio volume per (month, memberId)
   const totalByMonthMember = new Map<string, number>();
-  // Aggregate this project's volume per (month, memberId)
   const projectByMonthMember = new Map<string, number>();
 
   for (const entry of data.worklogs) {
@@ -145,15 +174,20 @@ export function calculateProjectFinance(data: AppData, project: Project): Projec
   const remainingTotal = Math.max(0, contractTotal - paidTotal);
   const paidPercent = contractTotal > 0 ? Math.round((paidTotal / contractTotal) * 100) : 0;
 
+  // 1. Journal-based salary allocations
   const salaryAllocations = calculateProjectSalaryAllocations(data, project.id);
-  const allocatedSalaryTotal = salaryAllocations.reduce((acc, item) => acc + item.allocatedAmount, 0);
+  let allocatedSalaryTotal = salaryAllocations.reduce((acc, item) => acc + item.allocatedAmount, 0);
 
   const memberMap = new Map(data.team.map((m) => [m.id, m]));
 
-  // Piecework costs from worklogs for this project
+  // 2. Journal-based piecework costs
   const projectWorklogs = data.worklogs.filter((w) => w.projectId === project.id);
-  const pieceworkByGroup = new Map<CostRoleGroup, number>();
+  const groupTotals = new Map<CostRoleGroup, number>();
   let pieceworkTotal = 0;
+
+  for (const alloc of salaryAllocations) {
+    groupTotals.set(alloc.costGroup, (groupTotals.get(alloc.costGroup) || 0) + alloc.allocatedAmount);
+  }
 
   for (const wl of projectWorklogs) {
     const member = memberMap.get(wl.memberId);
@@ -161,48 +195,71 @@ export function calculateProjectFinance(data: AppData, project: Project): Projec
     if (amt > 0) {
       pieceworkTotal += amt;
       const group: CostRoleGroup = member?.costGroup || 'Прочие роли';
-      pieceworkByGroup.set(group, (pieceworkByGroup.get(group) || 0) + amt);
+      groupTotals.set(group, (groupTotals.get(group) || 0) + amt);
     }
   }
 
-  // Direct expenses (printing, samples, logistics, other)
+  // 3. Journal-based direct expenses
   const projectExpenses = data.expenses.filter((e) => e.projectId === project.id);
-  const directExpensesTotal = projectExpenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+  let directExpensesTotal = projectExpenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
 
-  const fotTotal = allocatedSalaryTotal + pieceworkTotal;
-  const totalCosts = fotTotal + directExpensesTotal;
-
-  const netBalanceFromPaid = paidTotal - totalCosts;
-  const projectedMarginAmount = contractTotal - totalCosts;
-  const projectedMarginPercent =
-    contractTotal > 0 ? (projectedMarginAmount / contractTotal) * 100 : 0;
-  const fotPercentOfContract = contractTotal > 0 ? (fotTotal / contractTotal) * 100 : 0;
-  const fotLimitPercent = project.fotLimitPercent || data.settings.defaultFotLimitPercent || 40;
-
-  // Build cost breakdown by role/category
-  const groupTotals = new Map<CostRoleGroup, number>();
-  const orderedGroups: CostRoleGroup[] = [
-    'Дизайнер',
-    'Визуализатор',
-    'Чертёжник',
-    'Замеры',
-    'Руководитель проекта',
-    'Печать и логистика',
-    'Прочие роли',
-  ];
-
-  for (const alloc of salaryAllocations) {
-    groupTotals.set(alloc.costGroup, (groupTotals.get(alloc.costGroup) || 0) + alloc.allocatedAmount);
-  }
-  for (const [grp, amt] of pieceworkByGroup.entries()) {
-    groupTotals.set(grp, (groupTotals.get(grp) || 0) + amt);
-  }
   if (directExpensesTotal > 0) {
     groupTotals.set(
       'Печать и логистика',
       (groupTotals.get('Печать и логистика') || 0) + directExpensesTotal
     );
   }
+
+  // 4. Project-level Cost Lines (Команда и затраты объекта: совмещение ролей, сдельщики, окладники, накладные)
+  let costLinesPaidTotal = 0;
+  const costLines = Array.isArray(project.costLines) ? project.costLines : [];
+  for (const line of costLines) {
+    const effBudget = getCostLineEffectiveBudget(line);
+    const paid = Math.min(effBudget, Math.max(0, Number(line.paidAmount) || 0));
+    costLinesPaidTotal += paid;
+
+    const group = mapCostRoleToGroup(line.role);
+    if (effBudget > 0) {
+      groupTotals.set(group, (groupTotals.get(group) || 0) + effBudget);
+    }
+
+    if (line.payMode === 'overhead' || line.role === 'Бензин и печать альбомов') {
+      directExpensesTotal += effBudget;
+    } else if (line.payMode === 'salary') {
+      allocatedSalaryTotal += effBudget;
+    } else {
+      pieceworkTotal += effBudget;
+    }
+  }
+
+  // Journal worklogs & expenses are considered paid upon entry
+  const journalCostsTotal =
+    salaryAllocations.reduce((a, i) => a + i.allocatedAmount, 0) +
+    projectWorklogs.reduce((a, w) => a + (Number(w.pieceworkAmount) || 0), 0) +
+    projectExpenses.reduce((a, e) => a + (Number(e.amount) || 0), 0);
+
+  const fotTotal = allocatedSalaryTotal + pieceworkTotal;
+  const totalCosts = fotTotal + directExpensesTotal;
+  const totalCostsPaid = costLinesPaidTotal + journalCostsTotal;
+  const totalCostsRemaining = Math.max(0, totalCosts - totalCostsPaid);
+
+  const netBalanceFromPaid = paidTotal - totalCosts;
+  const projectedMarginAmount = contractTotal - totalCosts;
+  const projectedMarginPercent =
+    contractTotal > 0 ? (projectedMarginAmount / contractTotal) * 100 : 0;
+  const fotPercentOfContract = contractTotal > 0 ? (fotTotal / contractTotal) * 100 : 0;
+  const fotLimitPercent = project.fotLimitPercent || data.settings.defaultFotLimitPercent || 45;
+
+  const orderedGroups: CostRoleGroup[] = [
+    'Дизайнер',
+    'Визуализатор',
+    'Чертёжник',
+    'Замеры',
+    'Комплектатор',
+    'Руководитель проекта',
+    'Печать и логистика',
+    'Прочие роли',
+  ];
 
   const costBreakdown: CostBreakdownItem[] = orderedGroups
     .map((group) => {
@@ -226,6 +283,8 @@ export function calculateProjectFinance(data: AppData, project: Project): Projec
     fotTotal,
     directExpensesTotal,
     totalCosts,
+    totalCostsPaid,
+    totalCostsRemaining,
     netBalanceFromPaid,
     projectedMarginAmount,
     projectedMarginPercent,
@@ -249,25 +308,21 @@ export const CORE_COST_CATEGORIES: CostRoleGroup[] = [
 
 const DEFAULT_CATEGORY_WEIGHTS: Record<CostRoleGroup, number> = {
   Дизайнер: 0.34,
-  Визуализатор: 0.30,
-  Чертёжник: 0.22,
-  Замеры: 0.05,
-  'Печать и логистика': 0.09,
+  Визуализатор: 0.28,
+  Чертёжник: 0.24,
+  Замеры: 0.06,
+  Комплектатор: 0.0,
+  'Печать и логистика': 0.08,
   'Руководитель проекта': 0,
   'Прочие роли': 0,
 };
 
-/**
- * Computes planned cost budget per category for a project.
- * Uses user-saved overrides if present; otherwise derives sensible architectural
- * studio allocations from contractTotal * (fotLimitPercent + 4% direct expenses).
- */
 export function getPlannedCategoryBudgets(
   project: Project,
   contractTotal: number,
   defaultFotLimitPercent: number
 ): Record<CostRoleGroup, number> {
-  const fotPct = (project.fotLimitPercent || defaultFotLimitPercent || 40) / 100;
+  const fotPct = (project.fotLimitPercent || defaultFotLimitPercent || 45) / 100;
   const totalPlannedCostBudget = Math.round(contractTotal * Math.min(0.85, fotPct + 0.04));
 
   const result: Record<CostRoleGroup, number> = {
@@ -275,6 +330,7 @@ export function getPlannedCategoryBudgets(
     Визуализатор: 0,
     Чертёжник: 0,
     Замеры: 0,
+    Комплектатор: 0,
     'Руководитель проекта': 0,
     'Печать и логистика': 0,
     'Прочие роли': 0,
@@ -301,7 +357,7 @@ export interface StudioPulseSummary {
   totalPiecework: number;
   totalDirectExpenses: number;
   totalFot: number;
-  cashBalance: number; // totalPaid - (totalCosts + unallocatedCurrentMonthSalary)
+  cashBalance: number;
   totalMargin: number;
   averageMarginPercent: number;
   activeProjectsCount: number;
@@ -386,7 +442,7 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
       pausedProjectsCount += 1;
     }
 
-    // Risk 1: Over FOT limit (перерасход бюджета на команду)
+    // Risk 1: Over FOT limit (по умолчанию 45%)
     if (fin.isOverFotLimit) {
       elevateRisk(project.id, 'critical');
       flagProjectRisk(project.id, `Перерасход ФОТ (${fin.fotPercentOfContract.toFixed(0)}%)`);
@@ -425,7 +481,7 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
       });
     }
 
-    // Risk 3: Overdue unpaid payment stages (неоплаченный вовремя этап КП)
+    // Risk 3: Overdue unpaid payment stages
     const overduePayments = project.paymentStages.filter(
       (s) => !s.isPaid && s.dueDate && s.dueDate < today && project.status !== 'Заморожен'
     );
@@ -449,7 +505,7 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
       });
     }
 
-    // Risk 4: Overdue or studio-delayed work stages (просрочка по вине студии)
+    // Risk 4: Overdue or studio-delayed work stages
     const overdueTasks = project.workStages.filter(
       (ws) =>
         ws.progress < 100 &&
@@ -477,23 +533,39 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
         title: `Сдвиг сроков (${overdueTasks.length}): ${project.name}`,
         detail: overdueTasks
           .slice(0, 2)
-          .map((t) => `${t.title} (${t.delayReason === 'studio' ? 'задержка студии' : t.delayReason === 'client' ? 'ждём ОС клиента' : `план до ${formatShortDate(t.planEnd)}`})`)
+          .map(
+            (t) =>
+              `${t.title} (${
+                t.delayReason === 'studio'
+                  ? 'задержка студии'
+                  : t.delayReason === 'client'
+                  ? 'ждём ОС клиента'
+                  : `план до ${formatShortDate(t.planEnd)}`
+              })`
+          )
           .join('; '),
       });
     }
   }
 
-  // Risk 5: Salaried staff with zero worklog in current month (unallocated salary burn)
+  // Risk 5: Salaried staff with zero allocation in current month (only when journal worklogs are actively used)
   const salariedMembers = data.team.filter((m) => m.paymentType === 'salary' && m.monthlySalary > 0);
   const monthlySalaryBurn = salariedMembers.reduce((acc, m) => acc + m.monthlySalary, 0);
   let unallocatedCurrentMonthSalary = 0;
 
-  if (data.projects.length > 0) {
+  const hasSalariedCostLines = data.projects.some((p) =>
+    (p.costLines || []).some((cl) => cl.payMode === 'salary')
+  );
+
+  if (data.projects.length > 0 && (data.worklogs.length > 0 || hasSalariedCostLines)) {
     for (const member of salariedMembers) {
       const loggedThisMonth = data.worklogs
         .filter((w) => w.memberId === member.id && w.month === currMonth)
         .reduce((acc, w) => acc + (member.allocationBasis === 'area' ? w.areaSqm : w.hours), 0);
-      if (loggedThisMonth <= 0) {
+      const assignedInCostLines = data.projects.some((p) =>
+        (p.costLines || []).some((cl) => cl.memberId === member.id && cl.payMode === 'salary')
+      );
+      if (loggedThisMonth <= 0 && !assignedInCostLines) {
         unallocatedCurrentMonthSalary += member.monthlySalary;
         risks.push({
           id: `risk_idle_${member.id}_${currMonth}`,
@@ -511,6 +583,7 @@ export function calculateStudioPulse(data: AppData): StudioPulseSummary {
     'Визуализатор',
     'Чертёжник',
     'Замеры',
+    'Комплектатор',
     'Руководитель проекта',
     'Печать и логистика',
     'Прочие роли',

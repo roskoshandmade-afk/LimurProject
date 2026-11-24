@@ -263,15 +263,18 @@ export const StudioPulseView: React.FC<StudioPulseViewProps> = ({
       {demoProjects.length > 0 && (
         <div className="flex flex-col items-start justify-between gap-3 border border-[#0A0A0A] bg-[#F4F4F4] px-5 py-4 sm:flex-row sm:items-center">
           <p className="text-xs leading-relaxed text-[#525252]">
-            <span className="font-semibold text-[#0A0A0A]">Активен демонстрационный шаблон.</span>{' '}
-            Загружен 1 пример объекта для проверки графиков, Ганта и формулы распределения окладов. Вы можете удалить его в один клик.
+            <span className="font-semibold text-[#0A0A0A]">
+              Активен демонстрационный портфель ({demoProjects.length}{' '}
+              {demoProjects.length === 1 ? 'проект' : 'проекта'}).
+            </span>{' '}
+            Показаны примеры объектов со схемами 30/50/20 и 50/50, скидками и совмещением ролей. Вы можете удалить их одной кнопкой.
           </p>
           <button
             type="button"
             onClick={onDeleteAllDemo}
             className="min-h-[36px] border border-[#0A0A0A] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white whitespace-nowrap shrink-0"
           >
-            Удалить [ДЕМО] и начать с нуля
+            Удалить демо-данные и начать с нуля
           </button>
         </div>
       )}
@@ -825,9 +828,16 @@ export const StudioPulseView: React.FC<StudioPulseViewProps> = ({
                         onClick={() => onSelectProject(project.id)}
                         className="mt-3.5 block w-full text-left"
                       >
-                        <h3 className="text-base font-bold tracking-tight text-[#0A0A0A] underline-offset-4 hover:underline">
-                          {project.name}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-bold tracking-tight text-[#0A0A0A] underline-offset-4 hover:underline">
+                            {project.name}
+                          </h3>
+                          {project.isDemo && (
+                            <span className="border border-[#D4D4D4] bg-[#F4F4F4] px-1.5 py-0.5 font-mono text-[9px] font-semibold tracking-wider text-[#525252]">
+                              ДЕМО
+                            </span>
+                          )}
+                        </div>
                         <p className="mt-1 text-xs text-[#525252]">
                           {project.address || 'Адрес не указан'}
                         </p>

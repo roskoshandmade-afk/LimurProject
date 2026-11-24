@@ -4,6 +4,7 @@ import { Project } from '../types';
 import { ClientSnapshot } from '../utils/storage';
 import { SyncStatus } from '../utils/supabaseSync';
 import { SyncIndicator } from './Header';
+import { LimurLogo } from './LimurLogo';
 import {
   formatCurrency,
   formatDate,
@@ -84,9 +85,7 @@ export const ClientView: React.FC<ClientViewProps> = ({
         <header className="border-b border-[#0A0A0A] bg-white">
           <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3.5">
-              <span className="text-sm font-bold tracking-[0.18em] text-[#0A0A0A]">
-                LIMUR STUDIO
-              </span>
+              <LimurLogo className="h-9 w-auto shrink-0" />
               {syncStatus && (
                 <>
                   <span className="h-3.5 w-px bg-[#D4D4D4]" aria-hidden="true" />
@@ -189,16 +188,28 @@ export const ClientView: React.FC<ClientViewProps> = ({
                     className="flex min-h-[48px] items-center justify-between bg-[#0A0A0A] px-4 py-3 text-xs font-semibold text-white transition-colors hover:bg-[#262626]"
                   >
                     <span className="flex items-center gap-2.5">
-                      <FileText className="h-4 w-4" />
+                      <FileText className="h-4 w-4 shrink-0" />
                       Коммерческое предложение
                     </span>
-                    <ExternalLink className="h-3.5 w-3.5 opacity-75" />
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-75" />
                   </a>
                 ) : (
-                  <div className="flex min-h-[48px] items-center gap-2.5 border border-[#D4D4D4] bg-[#F4F4F4] px-4 py-3 text-xs text-[#737373]">
-                    <FileText className="h-4 w-4" />
-                    КП скоро будет добавлено
-                  </div>
+                  <button
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    className="flex min-h-[48px] cursor-not-allowed items-center justify-between border border-dashed border-[#D4D4D4] bg-[#F4F4F4] px-4 py-3 text-left text-xs text-[#737373] opacity-75"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <FileText className="h-4 w-4 shrink-0" />
+                      <span>
+                        <span className="block font-medium text-[#525252]">
+                          Коммерческое предложение
+                        </span>
+                        <span className="block text-[10px] text-[#737373]">Документ готовится</span>
+                      </span>
+                    </span>
+                  </button>
                 )}
 
                 {project.links.measurementUrl ? (
@@ -209,16 +220,26 @@ export const ClientView: React.FC<ClientViewProps> = ({
                     className="flex min-h-[48px] items-center justify-between border border-[#0A0A0A] bg-white px-4 py-3 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white"
                   >
                     <span className="flex items-center gap-2.5">
-                      <Ruler className="h-4 w-4" />
+                      <Ruler className="h-4 w-4 shrink-0" />
                       Обмерный план
                     </span>
-                    <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
                   </a>
                 ) : (
-                  <div className="flex min-h-[48px] items-center gap-2.5 border border-[#D4D4D4] bg-[#F4F4F4] px-4 py-3 text-xs text-[#737373]">
-                    <Ruler className="h-4 w-4" />
-                    Обмерный план в подготовке
-                  </div>
+                  <button
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    className="flex min-h-[48px] cursor-not-allowed items-center justify-between border border-dashed border-[#D4D4D4] bg-[#F4F4F4] px-4 py-3 text-left text-xs text-[#737373] opacity-75"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Ruler className="h-4 w-4 shrink-0" />
+                      <span>
+                        <span className="block font-medium text-[#525252]">Обмерный план</span>
+                        <span className="block text-[10px] text-[#737373]">Документ готовится</span>
+                      </span>
+                    </span>
+                  </button>
                 )}
 
                 {project.links.folderUrl ? (
@@ -229,16 +250,28 @@ export const ClientView: React.FC<ClientViewProps> = ({
                     className="flex min-h-[48px] items-center justify-between border border-[#0A0A0A] bg-white px-4 py-3 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white"
                   >
                     <span className="flex items-center gap-2.5">
-                      <FolderOpen className="h-4 w-4" />
+                      <FolderOpen className="h-4 w-4 shrink-0" />
                       Папка с материалами
                     </span>
-                    <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
                   </a>
                 ) : (
-                  <div className="flex min-h-[48px] items-center gap-2.5 border border-[#D4D4D4] bg-[#F4F4F4] px-4 py-3 text-xs text-[#737373]">
-                    <FolderOpen className="h-4 w-4" />
-                    Папка материалов не прикреплена
-                  </div>
+                  <button
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    className="flex min-h-[48px] cursor-not-allowed items-center justify-between border border-dashed border-[#D4D4D4] bg-[#F4F4F4] px-4 py-3 text-left text-xs text-[#737373] opacity-75"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <FolderOpen className="h-4 w-4 shrink-0" />
+                      <span>
+                        <span className="block font-medium text-[#525252]">
+                          Папка с материалами
+                        </span>
+                        <span className="block text-[10px] text-[#737373]">Документ готовится</span>
+                      </span>
+                    </span>
+                  </button>
                 )}
               </div>
             </section>

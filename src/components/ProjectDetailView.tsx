@@ -32,6 +32,7 @@ import {
 } from '../utils/calculations';
 import { GanttChart } from './GanttChart';
 import { ProjectAnalytics } from './ProjectAnalytics';
+import { ProjectCostLinesSection } from './ProjectCostLinesSection';
 import { WorklogSection } from './WorklogSection';
 
 interface ProjectDetailViewProps {
@@ -219,10 +220,10 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
           <button
             type="button"
             onClick={() => onEditProjectModal(project)}
-            className="flex h-9 items-center gap-1.5 border border-[#D4D4D4] bg-white px-3.5 text-xs font-medium text-[#0A0A0A] transition-colors hover:border-[#0A0A0A] whitespace-nowrap"
+            className="flex h-9 items-center gap-1.5 border border-[#0A0A0A] bg-white px-3.5 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-[#F4F4F4] whitespace-nowrap"
           >
             <Pencil className="h-3.5 w-3.5" />
-            Редактировать
+            Редактировать объект
           </button>
           <button
             type="button"
@@ -246,6 +247,14 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
               <span className="font-mono font-semibold tabular-nums text-[#0A0A0A]">
                 {project.areaSqm} м²
               </span>
+              {project.ratePerSqm ? (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="font-mono tabular-nums text-[#525252]">
+                    Тариф {formatCurrency(project.ratePerSqm)}/м²
+                  </span>
+                </>
+              ) : null}
               <span aria-hidden="true">·</span>
               <span className="font-mono font-semibold tabular-nums text-[#0A0A0A]">
                 Готовность {progress}%
@@ -264,6 +273,26 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                   <span>Клиент: {project.clientContact}</span>
                 </>
               )}
+              {project.ratePerSqm &&
+                project.areaSqm > 0 &&
+                project.ratePerSqm * project.areaSqm > finance.contractTotal && (
+                  <>
+                    <span className="text-[#D4D4D4]">/</span>
+                    <span className="font-mono font-semibold text-[#DC2626]">
+                      Скидка −
+                      {formatCurrency(
+                        project.ratePerSqm * project.areaSqm - finance.contractTotal
+                      )}{' '}
+                      (
+                      {(
+                        ((project.ratePerSqm * project.areaSqm - finance.contractTotal) /
+                          (project.ratePerSqm * project.areaSqm)) *
+                        100
+                      ).toFixed(1)}
+                      %)
+                    </span>
+                  </>
+                )}
             </div>
           </div>
 
@@ -590,14 +619,22 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
         </div>
       </section>
 
-      {/* Block 3: Interactive Gantt Chart */}
+      {/* Block 3: Team, Multi-Role Cost Lines, Salaried Allocation & Margin Traffic Light */}
+      <ProjectCostLinesSection
+        project={project}
+        team={data.team}
+        finance={finance}
+        onUpdateProject={onUpdateProject}
+      />
+
+      {/* Block 4: Interactive Gantt Chart */}
       <GanttChart
         project={project}
         team={data.team}
         onUpdateWorkStages={handleUpdateWorkStages}
       />
 
-      {/* Block 4: Analytics & Two Architectural Charts */}
+      {/* Block 5: Analytics & Two Architectural Charts */}
       <ProjectAnalytics
         project={project}
         finance={finance}

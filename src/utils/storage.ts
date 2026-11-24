@@ -2,6 +2,110 @@ import { createDemoData } from '../data/demoData';
 import { AppData } from '../types';
 
 const STORAGE_KEY = 'limur_studio_os_data_v1';
+const SYNC_META_KEY = 'limur_studio_os_sync_meta_v1';
+export const LAST_CLOUD_SNAPSHOT_KEY = 'limur_last_cloud_snapshot';
+
+export interface LocalSyncMeta {
+  localUpdatedAt: number;
+  hasPendingChanges: boolean;
+  pendingCount: number;
+  lastSyncedAt: number | null;
+}
+
+export interface CloudSnapshotBackup {
+  savedAt: number;
+  data: AppData;
+}
+
+const DEFAULT_SYNC_META: LocalSyncMeta = {
+  localUpdatedAt: 0,
+  hasPendingChanges: false,
+  pendingCount: 0,
+  lastSyncedAt: null,
+};
+
+export function loadSyncMeta(): LocalSyncMeta {
+  try {
+    const raw = localStorage.getItem(SYNC_META_KEY);
+    if (!raw) return { ...DEFAULT_SYNC_META };
+    const parsed = JSON.parse(raw) as Partial<LocalSyncMeta>;
+    const hasPendingChanges = Boolean(parsed?.hasPendingChanges);
+    const rawPendingCount =
+      typeof parsed?.pendingCount === 'number' && Number.isFinite(parsed.pendingCount)
+        ? Math.max(0, Math.floor(parsed.pendingCount))
+        : 0;
+
+    return {
+      localUpdatedAt:
+        typeof parsed?.localUpdatedAt === 'number' && Number.isFinite(parsed.localUpdatedAt)
+          ? parsed.localUpdatedAt
+          : 0,
+      hasPendingChanges,
+      pendingCount: hasPendingChanges ? Math.max(1, rawPendingCount) : 0,
+      lastSyncedAt:
+        typeof parsed?.lastSyncedAt === 'number' && Number.isFinite(parsed.lastSyncedAt)
+          ? parsed.lastSyncedAt
+          : null,
+    };
+  } catch {
+    return { ...DEFAULT_SYNC_META };
+  }
+}
+
+export function saveSyncMeta(meta: LocalSyncMeta): void {
+  try {
+    localStorage.setItem(SYNC_META_KEY, JSON.stringify(meta));
+  } catch {
+    // Ignore storage quota errors gracefully
+  }
+}
+
+/**
+ * Saves the last known confirmed cloud snapshot into the safety key `limur_last_cloud_snapshot`
+ * before offline local mutations overwrite Supabase.
+ */
+export function saveLastCloudSnapshot(data: AppData): CloudSnapshotBackup | null {
+  try {
+    const backup: CloudSnapshotBackup = {
+      savedAt: Date.now(),
+      data,
+    };
+    localStorage.setItem(LAST_CLOUD_SNAPSHOT_KEY, JSON.stringify(backup));
+    return backup;
+  } catch {
+    return null;
+  }
+}
+
+export function loadLastCloudSnapshot(): CloudSnapshotBackup | null {
+  try {
+    const raw = localStorage.getItem(LAST_CLOUD_SNAPSHOT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<CloudSnapshotBackup>;
+    if (
+      !parsed ||
+      typeof parsed.savedAt !== 'number' ||
+      !parsed.data ||
+      !Array.isArray(parsed.data.projects) ||
+      !Array.isArray(parsed.data.team)
+    ) {
+      return null;
+    }
+    return {
+      savedAt: parsed.savedAt,
+      data: {
+        ...parsed.data,
+        worklogs: Array.isArray(parsed.data.worklogs) ? parsed.data.worklogs : [],
+        expenses: Array.isArray(parsed.data.expenses) ? parsed.data.expenses : [],
+        commercialProposals: Array.isArray(parsed.data.commercialProposals)
+          ? parsed.data.commercialProposals
+          : [],
+      },
+    };
+  } catch {
+    return null;
+  }
+}
 
 export function loadAppData(): AppData {
   try {
@@ -23,16 +127,33 @@ export function loadAppData(): AppData {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(demo));
       return demo;
     }
+
+    // Seamlessly upgrade untouched v1 single demo project to the new v2 3-project studio portfolio
+    const syncMeta = loadSyncMeta();
+    const isUntouchedLegacyDemo =
+      !syncMeta.hasPendingChanges &&
+      (parsed.version || 1) < 2 &&
+      parsed.projects.length === 1 &&
+      parsed.projects[0]?.id === 'proj_demo_presnya';
+    if (isUntouchedLegacyDemo) {
+      const demo = createDemoData();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(demo));
+      return demo;
+    }
+
     return {
-      version: parsed.version || 1,
+      version: parsed.version || 2,
       settings: parsed.settings || {
-        defaultFotLimitPercent: 40,
-        studioName: 'LIMUR STUDIO OS',
+        defaultFotLimitPercent: 45,
+        studioName: 'LIMUR PROJECT',
       },
       team: parsed.team,
       projects: parsed.projects,
       worklogs: parsed.worklogs,
       expenses: parsed.expenses,
+      commercialProposals: Array.isArray(parsed.commercialProposals)
+        ? parsed.commercialProposals
+        : [],
     };
   } catch {
     return createDemoData();
@@ -47,6 +168,69 @@ export function saveAppData(data: AppData): void {
   }
 }
 
+/**
+ * Immediately persists a local user mutation to localStorage together with
+ * exact timestamp (`localUpdatedAt`), dirty flag (`hasPendingChanges: true`),
+ * and incremented `pendingCount`.
+ * When transitioning from clean -> dirty, preserves `previousCleanData` in `limur_last_cloud_snapshot`.
+ */
+export function saveLocalMutation(
+  data: AppData,
+  incrementPending = true,
+  previousCleanData?: AppData
+): LocalSyncMeta {
+  const prev = loadSyncMeta();
+  if (!prev.hasPendingChanges && previousCleanData) {
+    saveLastCloudSnapshot(previousCleanData);
+  }
+  const nextMeta: LocalSyncMeta = {
+    localUpdatedAt: Date.now(),
+    hasPendingChanges: true,
+    pendingCount: incrementPending ? prev.pendingCount + 1 : Math.max(1, prev.pendingCount),
+    lastSyncedAt: prev.lastSyncedAt,
+  };
+  saveAppData(data);
+  saveSyncMeta(nextMeta);
+  return nextMeta;
+}
+
+/**
+ * Marks local changes as successfully synced to Supabase (`hasPendingChanges = false`, `pendingCount = 0`).
+ * Optionally updates `limur_last_cloud_snapshot` with the newly confirmed cloud state.
+ */
+export function markSyncCompleted(syncedAt = Date.now(), syncedData?: AppData): LocalSyncMeta {
+  const prev = loadSyncMeta();
+  const nextMeta: LocalSyncMeta = {
+    localUpdatedAt: prev.localUpdatedAt || syncedAt,
+    hasPendingChanges: false,
+    pendingCount: 0,
+    lastSyncedAt: syncedAt,
+  };
+  saveSyncMeta(nextMeta);
+  if (syncedData) {
+    saveLastCloudSnapshot(syncedData);
+  }
+  return nextMeta;
+}
+
+/**
+ * Persists a clean snapshot fetched from Supabase (only called when `hasPendingChanges === false`).
+ * Also updates `limur_last_cloud_snapshot`.
+ */
+export function saveRemoteSnapshot(data: AppData): LocalSyncMeta {
+  const now = Date.now();
+  const nextMeta: LocalSyncMeta = {
+    localUpdatedAt: now,
+    hasPendingChanges: false,
+    pendingCount: 0,
+    lastSyncedAt: now,
+  };
+  saveAppData(data);
+  saveSyncMeta(nextMeta);
+  saveLastCloudSnapshot(data);
+  return nextMeta;
+}
+
 export function exportDataToJson(data: AppData): void {
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
@@ -54,7 +238,7 @@ export function exportDataToJson(data: AppData): void {
   const link = document.createElement('a');
   const stamp = new Date().toISOString().slice(0, 10);
   link.href = url;
-  link.download = `limur-studio-os-backup-${stamp}.json`;
+  link.download = `limur-project-backup-${stamp}.json`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -73,15 +257,18 @@ export function parseImportedJson(rawText: string): { ok: true; data: AppData } 
     return {
       ok: true,
       data: {
-        version: parsed.version || 1,
+        version: parsed.version || 2,
         settings: parsed.settings || {
-          defaultFotLimitPercent: 40,
-          studioName: 'LIMUR STUDIO OS',
+          defaultFotLimitPercent: 45,
+          studioName: 'LIMUR PROJECT',
         },
         team: parsed.team,
         projects: parsed.projects,
         worklogs: Array.isArray(parsed.worklogs) ? parsed.worklogs : [],
         expenses: Array.isArray(parsed.expenses) ? parsed.expenses : [],
+        commercialProposals: Array.isArray(parsed.commercialProposals)
+          ? parsed.commercialProposals
+          : [],
       },
     };
   } catch {

@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Eye, EyeOff, RefreshCw, RotateCcw, Wifi, WifiOff, X } from 'lucide-react';
+import {
+  Check,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  RotateCcw,
+  Upload,
+  Wifi,
+  WifiOff,
+  X,
+} from 'lucide-react';
 import {
   clearCustomSupabaseConfig,
   getActiveSupabaseConfig,
@@ -16,19 +26,48 @@ interface SupabaseSettingsModalProps {
   open: boolean;
   syncStatus: SyncStatus;
   realtimeStatus: RealtimeStatus;
+  hasPendingChanges: boolean;
+  pendingCount: number;
+  localUpdatedAt: number;
+  lastSyncedAt: number | null;
+  lastCloudSnapshotAt?: number | null;
+  isSyncing: boolean;
   lastSyncError: SupabaseSyncError | null;
   onClose: () => void;
   onConfigApplied: () => void;
+  onForcePushLocalToCloud: () => Promise<{ ok: boolean; error?: SupabaseSyncError }>;
   onNotify: (msg: string, type?: 'default' | 'error') => void;
+}
+
+function formatSyncTimestamp(ts: number | null): string {
+  if (!ts || ts <= 0) return '—';
+  try {
+    return new Date(ts).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  } catch {
+    return '—';
+  }
 }
 
 export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({
   open,
   syncStatus,
   realtimeStatus,
+  hasPendingChanges,
+  pendingCount,
+  localUpdatedAt,
+  lastSyncedAt,
+  lastCloudSnapshotAt = null,
+  isSyncing,
   lastSyncError,
   onClose,
   onConfigApplied,
+  onForcePushLocalToCloud,
   onNotify,
 }) => {
   const [url, setUrl] = useState('');
@@ -36,6 +75,7 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({
   const [showKey, setShowKey] = useState(false);
   const [configSource, setConfigSource] = useState<'custom' | 'env' | 'default'>('default');
   const [testing, setTesting] = useState(false);
+  const [forcePushing, setForcePushing] = useState(false);
   const [testResult, setTestResult] = useState<{
     ok: boolean;
     message: string;
@@ -79,7 +119,9 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({
       setTestResult({
         ok: true,
         message: `Соединение установлено (${res.latencyMs} мс)`,
-        detail: res.rowExists
+        detail: hasPendingChanges
+          ? `В локальной очереди ${Math.max(1, pendingCount)} правок — выполняется приоритетная отправка в облако.`
+          : res.rowExists
           ? 'Таблица studio_state доступна, данные синхронизируются.'
           : 'Таблица studio_state доступна, выполняется первичная запись состояния.',
       });
@@ -99,6 +141,34 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({
     }
   };
 
+  const handleForcePush = async () => {
+    if (forcePushing || isSyncing) return;
+    setForcePushing(true);
+    setTestResult(null);
+
+    const res = await onForcePushLocalToCloud();
+    setForcePushing(false);
+
+    if (res.ok) {
+      setTestResult({
+        ok: true,
+        message: 'Локальные данные успешно отправлены в облако',
+        detail: 'Строка public.studio_state (id = main) перезаписана текущим локальным состоянием. Очередь очищена.',
+      });
+    } else {
+      const codeTag = res.error?.code
+        ? `[${res.error.code}]`
+        : res.error?.status
+        ? `[HTTP ${res.error.status}]`
+        : '[ОШИБКА]';
+      setTestResult({
+        ok: false,
+        message: `${codeTag} ${res.error?.humanHint || 'Не удалось отправить данные в облако'}`,
+        detail: res.error?.message,
+      });
+    }
+  };
+
   const handleResetToBuildDefaults = () => {
     clearCustomSupabaseConfig();
     const cfg = getActiveSupabaseConfig();
@@ -110,14 +180,25 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({
     onNotify('Восстановлены настройки подключения из сборки');
   };
 
-  const statusLabel =
-    syncStatus === 'online'
-      ? 'Онлайн'
-      : syncStatus === 'syncing'
-      ? 'Синхронизация...'
-      : syncStatus === 'connecting'
-      ? 'Подключение...'
-      : 'Офлайн (локальный режим)';
+  const isSyncingState = isSyncing || syncStatus === 'syncing' || syncStatus === 'connecting';
+  const isOfflineOrPending = !isSyncingState && (syncStatus === 'offline' || hasPendingChanges);
+  const effectivePending = Math.max(pendingCount, hasPendingChanges ? 1 : 0);
+
+  const statusLabel = isSyncingState
+    ? 'Синхронизация...'
+    : isOfflineOrPending
+    ? effectivePending > 0
+      ? `Офлайн (в очереди: ${effectivePending})`
+      : 'Офлайн (локальный режим)'
+    : 'Онлайн';
+
+  const statusColorClass = isSyncingState
+    ? 'text-[#1D4ED8]'
+    : isOfflineOrPending
+    ? effectivePending > 0
+      ? 'text-[#C2410C]'
+      : 'text-[#DC2626]'
+    : 'text-[#15803D]';
 
   const realtimeLabel =
     realtimeStatus === 'subscribed'
@@ -135,7 +216,7 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({
       aria-modal="true"
       aria-labelledby="supabase-settings-title"
     >
-      <div className="w-full max-w-lg border border-[#0A0A0A] bg-white p-6">
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto border border-[#0A0A0A] bg-white p-6">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-[#0A0A0A] pb-4">
           <div>
@@ -146,7 +227,8 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({
               Настройки подключения Supabase
             </h2>
             <p className="mt-1 text-xs text-[#525252]">
-              Синхронизация состояния студии через таблицу <code className="font-mono text-[#0A0A0A]">public.studio_state</code>
+              Offline-First синхронизация через таблицу{' '}
+              <code className="font-mono text-[#0A0A0A]">public.studio_state</code>
             </p>
           </div>
           <button
@@ -162,11 +244,17 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({
         {/* Live Diagnostic Status Strip */}
         <div className="mt-4 border border-[#D4D4D4] bg-[#F4F4F4] p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2 font-semibold text-[#0A0A0A]">
-              {syncStatus === 'online' || syncStatus === 'syncing' ? (
-                <Wifi className="h-3.5 w-3.5 text-[#15803D]" />
+            <div className={`flex items-center gap-2 font-semibold ${statusColorClass}`}>
+              {isSyncingState ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin text-[#2563EB]" />
+              ) : isOfflineOrPending ? (
+                <WifiOff
+                  className={`h-3.5 w-3.5 ${
+                    effectivePending > 0 ? 'text-[#EA580C]' : 'text-[#DC2626]'
+                  }`}
+                />
               ) : (
-                <WifiOff className="h-3.5 w-3.5 text-[#DC2626]" />
+                <Wifi className="h-3.5 w-3.5 text-[#15803D]" />
               )}
               <span>{statusLabel}</span>
             </div>
@@ -179,9 +267,40 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({
             </span>
           </div>
 
-          <div className="mt-1.5 flex items-center justify-between text-[11px] text-[#525252]">
-            <span>Канал обновлений: {realtimeLabel}</span>
+          <div className="mt-2 grid grid-cols-1 gap-1 border-t border-[#D4D4D4] pt-2 text-[11px] text-[#525252] sm:grid-cols-2">
+            <div>
+              Канал: <span className="font-medium text-[#0A0A0A]">{realtimeLabel}</span>
+            </div>
+            <div className="font-mono tabular-nums sm:text-right">
+              Несинхронизировано:{' '}
+              <span
+                className={`font-semibold ${
+                  hasPendingChanges ? 'text-[#C2410C]' : 'text-[#15803D]'
+                }`}
+              >
+                {hasPendingChanges ? effectivePending : 0}
+              </span>
+            </div>
+            <div className="font-mono tabular-nums">
+              Локально: {formatSyncTimestamp(localUpdatedAt)}
+            </div>
+            <div className="font-mono tabular-nums sm:text-right">
+              В облаке: {formatSyncTimestamp(lastSyncedAt)}
+            </div>
+            {lastCloudSnapshotAt && (
+              <div className="font-mono text-[10px] tabular-nums text-[#737373] sm:col-span-2">
+                Страховочный снимок (limur_last_cloud_snapshot):{' '}
+                {formatSyncTimestamp(lastCloudSnapshotAt)}
+              </div>
+            )}
           </div>
+
+          {hasPendingChanges && (
+            <div className="mt-2.5 border border-[#EA580C] bg-[#FFF7ED] px-2.5 py-2 text-[11px] text-[#9A3412]">
+              Защита от потери данных активна: пока локальные изменения ({effectivePending}) не
+              отправлены в Supabase, входящие обновления из облака не перезапишут вашу работу.
+            </div>
+          )}
 
           {syncStatus === 'offline' && lastSyncError && (
             <div className="mt-3 border-t border-[#D4D4D4] pt-2.5 text-xs">
@@ -199,6 +318,31 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({
               </div>
             </div>
           )}
+        </div>
+
+        {/* Manual Conflict Resolution / Force Push Action */}
+        <div className="mt-4 border border-[#0A0A0A] bg-white p-3.5">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-xs font-semibold text-[#0A0A0A]">
+                Ручная синхронизация и разрешение конфликтов
+              </div>
+              <p className="mt-0.5 text-[11px] text-[#525252]">
+                Отправит текущее локальное состояние браузера в Supabase поверх облачной копии.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleForcePush}
+              disabled={forcePushing || isSyncing || testing}
+              className="flex min-h-[38px] shrink-0 items-center justify-center gap-1.5 border border-[#0A0A0A] bg-[#0A0A0A] px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#262626] disabled:opacity-50"
+            >
+              <Upload className={`h-3.5 w-3.5 ${forcePushing ? 'animate-pulse' : ''}`} />
+              {forcePushing
+                ? 'Отправка...'
+                : 'Принудительно отправить локальные данные в облако'}
+            </button>
+          </div>
         </div>
 
         {/* Credentials Form */}
@@ -304,7 +448,7 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={testing}
+                disabled={testing || forcePushing}
                 className="flex min-h-[38px] items-center gap-1.5 bg-[#0A0A0A] px-4 text-xs font-semibold text-white hover:bg-[#262626] disabled:opacity-50"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${testing ? 'animate-spin' : ''}`} />

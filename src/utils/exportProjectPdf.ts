@@ -6,6 +6,7 @@ import monoBoldUrl from '../assets/fonts/JetBrainsMono-Bold.ttf';
 import { Project } from '../types';
 import { ClientSnapshot } from './storage';
 import { formatCurrency, formatDate, formatShortDate, getTodayIso } from './calculations';
+import { drawLimurLogoPdf } from './drawLimurLogoPdf';
 
 type ExportableProject = Project | ClientSnapshot;
 
@@ -124,30 +125,34 @@ export async function exportProjectFinancialPdf(project: ExportableProject): Pro
   };
 
   // =========================================================================
-  // 1. ARCHITECTURAL MASTHEAD
+  // 1. ARCHITECTURAL MASTHEAD (LI.MUR PROJECT RECTANGULAR BRAND MARK)
   // =========================================================================
   doc.setDrawColor(15, 15, 15);
   doc.setLineWidth(0.8);
   doc.line(marginX, y, marginX + contentW, y);
-  y += 6;
+  y += 3.5;
+
+  const mastheadLogo = await drawLimurLogoPdf(doc, marginX, y, 36);
 
   doc.setFont('ArchSans', 'bold');
-  doc.setFontSize(10);
+  doc.setFontSize(7.8);
   doc.setTextColor(15, 15, 15);
-  doc.text('LIMUR STUDIO', marginX, y);
+  doc.text('ФИНАНСОВАЯ СВОДКА ПРОЕКТА', marginX + contentW, y + 5, {
+    align: 'right',
+  });
 
   doc.setFont('ArchMono', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(82, 82, 82);
-  doc.text(`ФИНАНСОВАЯ СВОДКА  ·  ${todayFormatted}`, marginX + contentW, y, {
+  doc.text(`от ${todayFormatted}  ·  limurproject.ru`, marginX + contentW, y + 10.2, {
     align: 'right',
   });
 
-  y += 4;
+  y += mastheadLogo.heightMm + 3.8;
   doc.setDrawColor(229, 229, 229);
   doc.setLineWidth(0.25);
   doc.line(marginX, y, marginX + contentW, y);
-  y += 9;
+  y += 8.5;
 
   // =========================================================================
   // 2. PROJECT PASSPORT
@@ -570,13 +575,13 @@ export async function exportProjectFinancialPdf(project: ExportableProject): Pro
     doc.setFont('ArchSans', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(115, 115, 115);
-    doc.text(`LIMUR STUDIO  ·  Отчёт для заказчика от ${todayFormatted}`, marginX, footerY);
+    doc.text(`LIMUR PROJECT  ·  limurproject.ru  ·  Отчёт для заказчика от ${todayFormatted}`, marginX, footerY);
 
     doc.setFont('ArchMono', 'normal');
     doc.setFontSize(7.5);
     doc.text(`Стр. ${p} / ${totalPages}`, marginX + contentW, footerY, { align: 'right' });
   }
 
-  const fileName = `LIMUR_Отчет_${sanitizeFileName(project.name)}_${todayIso}.pdf`;
+  const fileName = `LIMUR_PROJECT_Отчет_${sanitizeFileName(project.name)}_${todayIso}.pdf`;
   doc.save(fileName);
 }

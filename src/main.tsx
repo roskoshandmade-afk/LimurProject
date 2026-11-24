@@ -30,7 +30,7 @@ class AppErrorBoundary extends React.Component<
         <div className="flex min-h-screen items-center justify-center bg-white p-6 text-[#0A0A0A]">
           <div className="w-full max-w-md border border-[#0A0A0A] bg-white p-6">
             <div className="text-xs font-semibold tracking-[0.14em] text-[#0A0A0A]">
-              LIMUR STUDIO OS
+              LIMUR PROJECT
             </div>
             <h1 className="mt-3 text-lg font-semibold">Ошибка отображения</h1>
             <p className="mt-2 text-xs leading-relaxed text-[#525252]">
@@ -66,6 +66,103 @@ class AppErrorBoundary extends React.Component<
     return this.props.children;
   }
 }
+
+function collectLoadedStaticAssetUrls(): string[] {
+  const urls = new Set<string>();
+  const origin = window.location.origin;
+
+  const pushIfSameOrigin = (rawUrl: string | null | undefined) => {
+    if (!rawUrl) return;
+    try {
+      const parsed = new URL(rawUrl, window.location.href);
+      if (parsed.origin === origin && !parsed.pathname.endsWith('/sw.js')) {
+        urls.add(parsed.href);
+      }
+    } catch {
+      // ignore invalid URL
+    }
+  };
+
+  document.querySelectorAll<HTMLScriptElement>('script[src]').forEach((el) => {
+    pushIfSameOrigin(el.src);
+  });
+
+  document
+    .querySelectorAll<HTMLLinkElement>('link[href]')
+    .forEach((el) => {
+      const rel = (el.rel || '').toLowerCase();
+      if (
+        rel.includes('stylesheet') ||
+        rel.includes('modulepreload') ||
+        rel.includes('icon') ||
+        rel.includes('manifest')
+      ) {
+        pushIfSameOrigin(el.href);
+      }
+    });
+
+  if (typeof performance !== 'undefined' && typeof performance.getEntriesByType === 'function') {
+    const entries = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+    entries.forEach((entry) => {
+      pushIfSameOrigin(entry.name);
+    });
+  }
+
+  return Array.from(urls);
+}
+
+function registerServiceWorker(): void {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+    return;
+  }
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('./sw.js', { scope: './' })
+      .then((registration) => {
+        const warmCache = () => {
+          const worker = registration.active || navigator.serviceWorker.controller;
+          if (!worker) return;
+          const urls = collectLoadedStaticAssetUrls();
+          if (urls.length > 0) {
+            worker.postMessage({ type: 'WARM_CACHE', urls });
+          }
+        };
+
+        if (registration.active) {
+          warmCache();
+        } else {
+          navigator.serviceWorker.ready
+            .then((readyReg) => {
+              const worker = readyReg.active || navigator.serviceWorker.controller;
+              if (!worker) return;
+              const urls = collectLoadedStaticAssetUrls();
+              if (urls.length > 0) {
+                worker.postMessage({ type: 'WARM_CACHE', urls });
+              }
+            })
+            .catch(() => {
+              // ignore
+            });
+        }
+
+        registration.addEventListener('updatefound', () => {
+          const installing = registration.installing;
+          if (!installing) return;
+          installing.addEventListener('statechange', () => {
+            if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+              installing.postMessage({ type: 'SKIP_WAITING' });
+            }
+          });
+        });
+      })
+      .catch((error) => {
+        console.warn('[LIMUR PROJECT][PWA] Service Worker registration failed:', error);
+      });
+  });
+}
+
+registerServiceWorker();
 
 const rootEl = document.getElementById('root');
 if (rootEl) {

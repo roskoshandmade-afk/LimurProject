@@ -78,7 +78,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
           </button>
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-4 border-b border-[#D4D4D4] pb-5">
+        <div className="mt-5 grid grid-cols-2 gap-4 border-b border-[#D4D4D4] pb-5 sm:grid-cols-4">
           <div>
             <div className="text-xs text-[#525252]">Проекты</div>
             <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#0A0A0A]">
@@ -86,13 +86,19 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
             </div>
           </div>
           <div>
-            <div className="text-xs text-[#525252]">Позиции команды</div>
+            <div className="text-xs text-[#525252]">КП</div>
+            <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#0A0A0A]">
+              {data.commercialProposals.length}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-[#525252]">Команда</div>
             <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#0A0A0A]">
               {data.team.length}
             </div>
           </div>
           <div>
-            <div className="text-xs text-[#525252]">Записи журнала</div>
+            <div className="text-xs text-[#525252]">Журнал</div>
             <div className="mt-1 font-mono text-xl font-semibold tabular-nums text-[#0A0A0A]">
               {data.worklogs.length + data.expenses.length}
             </div>

@@ -85,7 +85,7 @@ export function createSupabaseClientForConfig(
     const cleanKey = anonKey.trim();
 
     if (!cleanUrl || !cleanKey) {
-      console.error('[LIMUR STUDIO OS][Supabase] Missing Project URL or Anon Key.', {
+      console.error('[LIMUR PROJECT][Supabase] Missing Project URL or Anon Key.', {
         hasUrl: Boolean(cleanUrl),
         hasAnonKey: Boolean(cleanKey),
       });
@@ -110,7 +110,7 @@ export function createSupabaseClientForConfig(
     });
   } catch (err) {
     console.error(
-      '[LIMUR STUDIO OS][Supabase] Failed to initialize client, falling back to localStorage:',
+      '[LIMUR PROJECT][Supabase] Failed to initialize client, falling back to localStorage:',
       err
     );
     return null;
@@ -138,7 +138,7 @@ export function saveCustomSupabaseConfig(url: string, anonKey: string): Supabase
       JSON.stringify({ url: cleanUrl, anonKey: cleanKey })
     );
   } catch (err) {
-    console.error('[LIMUR STUDIO OS][Supabase] Failed to persist custom config in localStorage:', err);
+    console.error('[LIMUR PROJECT][Supabase] Failed to persist custom config in localStorage:', err);
   }
   return reinitializeSupabaseClient();
 }

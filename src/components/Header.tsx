@@ -2,8 +2,17 @@ import React, { useState } from 'react';
 import { Link2, Plus, Menu, X, Database } from 'lucide-react';
 import { UserRole } from '../types';
 import { SyncStatus } from '../utils/supabaseSync';
+import { PWAInstallButton } from './PWAInstallButton';
+import { LimurLogo } from './LimurLogo';
 
-export type WorkspaceTab = 'projects' | 'worklog' | 'team';
+export type WorkspaceTab = 'projects' | 'proposals' | 'worklog' | 'team';
+
+const NAV_TABS: Array<{ id: WorkspaceTab; label: string }> = [
+  { id: 'projects', label: 'Пульс студии' },
+  { id: 'proposals', label: 'Конструктор КП' },
+  { id: 'worklog', label: 'Журнал и расходы' },
+  { id: 'team', label: 'Команда и ФОТ' },
+];
 
 interface HeaderProps {
   role: UserRole;
@@ -11,6 +20,8 @@ interface HeaderProps {
   selectedProjectName?: string;
   canCopyClientLink: boolean;
   syncStatus: SyncStatus;
+  hasPendingChanges?: boolean;
+  pendingCount?: number;
   syncErrorHint?: string;
   onRoleChange: (role: UserRole) => void;
   onTabChange: (tab: WorkspaceTab) => void;
@@ -29,50 +40,69 @@ const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
 
 export const SyncIndicator: React.FC<{
   status: SyncStatus;
+  hasPendingChanges?: boolean;
+  pendingCount?: number;
   errorHint?: string;
   onClick?: () => void;
-}> = ({ status, errorHint, onClick }) => {
-  const dotClass =
-    status === 'online'
-      ? 'bg-[#15803D]'
-      : status === 'syncing'
-      ? 'bg-[#D97706] animate-pulse'
-      : status === 'connecting'
-      ? 'bg-[#737373] animate-pulse'
-      : 'bg-[#DC2626]';
+}> = ({ status, hasPendingChanges = false, pendingCount = 0, errorHint, onClick }) => {
+  const isSyncingState = status === 'syncing' || status === 'connecting';
+  const isOfflineOrPending = !isSyncingState && (status === 'offline' || hasPendingChanges);
+  const effectivePending = Math.max(pendingCount, hasPendingChanges ? 1 : 0);
 
-  const label =
-    status === 'online'
-      ? 'Онлайн'
-      : status === 'syncing'
-      ? 'Синхронизация...'
-      : status === 'connecting'
-      ? 'Подключение...'
-      : 'Офлайн';
+  const dotClass = isSyncingState
+    ? 'bg-[#2563EB] animate-pulse'
+    : isOfflineOrPending
+    ? effectivePending > 0
+      ? 'bg-[#EA580C]'
+      : 'bg-[#DC2626]'
+    : 'bg-[#15803D]';
 
-  const title =
-    status === 'online'
-      ? 'Синхронизация с Supabase активна · Нажмите для настроек'
-      : status === 'syncing'
-      ? 'Сохранение изменений в Supabase'
-      : status === 'offline'
-      ? `${errorHint || 'Нет связи с Supabase, изменения сохранены локально'} · Нажмите для настройки`
-      : 'Подключение к Supabase...';
+  const buttonClass = isSyncingState
+    ? 'border-[#2563EB] bg-[#EFF6FF] text-[#1D4ED8] hover:bg-[#1D4ED8] hover:text-white'
+    : isOfflineOrPending
+    ? effectivePending > 0
+      ? 'border-[#EA580C] bg-[#FFF7ED] text-[#C2410C] hover:bg-[#EA580C] hover:text-white'
+      : 'border-[#DC2626] bg-[#FEF2F2] text-[#DC2626] hover:bg-[#DC2626] hover:text-white'
+    : 'border-transparent text-[#525252] hover:border-[#0A0A0A] hover:text-[#0A0A0A]';
+
+  const title = isSyncingState
+    ? effectivePending > 0
+      ? `Отправка офлайн-изменений (${effectivePending}) в Supabase...`
+      : 'Синхронизация данных с Supabase...'
+    : isOfflineOrPending
+    ? effectivePending > 0
+      ? `Офлайн: ${effectivePending} несинхронизированных правок сохранены локально и отправятся при восстановлении сети. ${errorHint || ''}`
+      : `${errorHint || 'Нет связи с Supabase, изменения сохраняются локально'} · Нажмите для настройки`
+    : 'Онлайн · Все изменения синхронизированы с Supabase · Нажмите для настроек';
+
+  const renderLabel = () => {
+    if (isSyncingState) {
+      return <span>Синхронизация...</span>;
+    }
+    if (isOfflineOrPending) {
+      if (effectivePending > 0) {
+        return (
+          <>
+            <span className="hidden sm:inline">Офлайн (в очереди: {effectivePending})</span>
+            <span className="sm:hidden">Офлайн ({effectivePending})</span>
+          </>
+        );
+      }
+      return <span>Офлайн</span>;
+    }
+    return <span>Онлайн</span>;
+  };
 
   if (onClick) {
     return (
       <button
         type="button"
         onClick={onClick}
-        className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 ${
-          status === 'offline'
-            ? 'border-[#DC2626] bg-[#FEF2F2] text-[#DC2626] hover:bg-[#DC2626] hover:text-white'
-            : 'border-transparent text-[#525252] hover:border-[#0A0A0A] hover:text-[#0A0A0A]'
-        }`}
+        className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 ${buttonClass}`}
         title={title}
       >
         <span className={`h-2 w-2 rounded-none ${dotClass}`} aria-hidden="true" />
-        <span>{label}</span>
+        {renderLabel()}
       </button>
     );
   }
@@ -83,7 +113,7 @@ export const SyncIndicator: React.FC<{
       title={title}
     >
       <span className={`h-2 w-2 rounded-none ${dotClass}`} aria-hidden="true" />
-      <span>{label}</span>
+      {renderLabel()}
     </span>
   );
 };
@@ -93,6 +123,8 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   canCopyClientLink,
   syncStatus,
+  hasPendingChanges = false,
+  pendingCount = 0,
   syncErrorHint,
   onRoleChange,
   onTabChange,
@@ -105,7 +137,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#0A0A0A] bg-white">
+    <header className="no-print sticky top-0 z-30 border-b border-[#0A0A0A] bg-white">
       {/* Primary Top Bar */}
       <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Zone 1: Brand Wordmark + Live Sync Status */}
@@ -113,54 +145,38 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={onGoHome}
-            className="text-left text-sm font-bold tracking-[0.18em] text-[#0A0A0A] transition-opacity hover:opacity-75 whitespace-nowrap shrink-0"
+            className="flex shrink-0 items-center transition-opacity hover:opacity-80"
+            aria-label="LIMUR PROJECT — на главную"
           >
-            LIMUR STUDIO OS
+            <LimurLogo className="h-9 w-auto shrink-0" />
           </button>
           <span className="h-3.5 w-px bg-[#D4D4D4]" aria-hidden="true" />
           <SyncIndicator
             status={syncStatus}
+            hasPendingChanges={hasPendingChanges}
+            pendingCount={pendingCount}
             errorHint={syncErrorHint}
             onClick={role !== 'client' ? onOpenSupabaseSettings : undefined}
           />
         </div>
 
-        {/* Zone 2: Primary Navigation (Desktop, hidden for Client role) */}
+        {/* Zone 2: Primary Navigation (Single desktop nav from NAV_TABS; hidden for Client role) */}
         {role !== 'client' ? (
-          <nav className="hidden items-center gap-6 md:flex">
-            <button
-              type="button"
-              onClick={() => onTabChange('projects')}
-              className={`border-b-2 py-4 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
-                activeTab === 'projects'
-                  ? 'border-[#0A0A0A] text-[#0A0A0A]'
-                  : 'border-transparent text-[#525252] hover:text-[#0A0A0A]'
-              }`}
-            >
-              Пульс студии
-            </button>
-            <button
-              type="button"
-              onClick={() => onTabChange('worklog')}
-              className={`border-b-2 py-4 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
-                activeTab === 'worklog'
-                  ? 'border-[#0A0A0A] text-[#0A0A0A]'
-                  : 'border-transparent text-[#525252] hover:text-[#0A0A0A]'
-              }`}
-            >
-              Журнал и расходы
-            </button>
-            <button
-              type="button"
-              onClick={() => onTabChange('team')}
-              className={`border-b-2 py-4 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
-                activeTab === 'team'
-                  ? 'border-[#0A0A0A] text-[#0A0A0A]'
-                  : 'border-transparent text-[#525252] hover:text-[#0A0A0A]'
-              }`}
-            >
-              Команда и ФОТ
-            </button>
+          <nav className="hidden items-center gap-5 lg:flex" aria-label="Основная навигация">
+            {NAV_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onTabChange(tab.id)}
+                className={`border-b-2 py-4 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+                  activeTab === tab.id
+                    ? 'border-[#0A0A0A] text-[#0A0A0A]'
+                    : 'border-transparent text-[#525252] hover:text-[#0A0A0A]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
             <button
               type="button"
               onClick={onOpenBackup}
@@ -170,13 +186,13 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </nav>
         ) : (
-          <div className="hidden text-xs font-medium text-[#525252] md:block whitespace-nowrap">
+          <div className="hidden text-xs font-medium text-[#525252] lg:block whitespace-nowrap">
             Режим предпросмотра для клиента
           </div>
         )}
 
         {/* Zone 3: Role Switcher + Primary Action (Desktop) */}
-        <div className="hidden items-center gap-2.5 lg:flex shrink-0">
+        <div className="hidden items-center gap-2 lg:flex shrink-0">
           <div
             className="flex items-center border border-[#0A0A0A] bg-[#F4F4F4] p-0.5"
             role="group"
@@ -187,7 +203,7 @@ export const Header: React.FC<HeaderProps> = ({
                 key={opt.value}
                 type="button"
                 onClick={() => onRoleChange(opt.value)}
-                className={`px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+                className={`px-2 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                   role === opt.value
                     ? 'bg-[#0A0A0A] text-white'
                     : 'text-[#525252] hover:text-[#0A0A0A]'
@@ -202,19 +218,21 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={onCopyClientLink}
-              className="flex h-9 items-center gap-1.5 border border-[#0A0A0A] bg-white px-3 text-xs font-medium text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white whitespace-nowrap shrink-0"
+              className="flex h-9 items-center gap-1.5 border border-[#0A0A0A] bg-white px-2.5 text-xs font-medium text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white whitespace-nowrap shrink-0"
               title="Скопировать прямую ссылку в режиме Client View без панели ролей"
             >
               <Link2 className="h-3.5 w-3.5" />
-              Ссылка клиенту
+              <span className="hidden xl:inline">Ссылка клиенту</span>
             </button>
           )}
+
+          <PWAInstallButton />
 
           {role !== 'client' && (
             <button
               type="button"
               onClick={onOpenNewProject}
-              className="flex h-9 items-center gap-1.5 bg-[#0A0A0A] px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#262626] whitespace-nowrap shrink-0"
+              className="flex h-9 items-center gap-1.5 bg-[#0A0A0A] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#262626] whitespace-nowrap shrink-0"
             >
               <Plus className="h-3.5 w-3.5" />
               Новый проект
@@ -222,7 +240,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Mobile / Tablet compact controls */}
+        {/* Mobile / Tablet compact controls (flex lg:hidden) */}
         <div className="flex items-center gap-2 lg:hidden">
           {role !== 'client' && (
             <button
@@ -245,9 +263,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Mobile Dropdown Drawer */}
+      {/* Mobile Dropdown Drawer (flex lg:hidden, renders from same NAV_TABS array) */}
       {mobileMenuOpen && (
-        <div className="border-t border-[#0A0A0A] bg-white px-4 py-4 lg:hidden">
+        <div className="flex flex-col border-t border-[#0A0A0A] bg-white px-4 py-4 lg:hidden">
           <div className="space-y-4">
             <div>
               <div className="mb-2 text-[11px] font-medium text-[#525252]">Режим просмотра</div>
@@ -273,49 +291,24 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {role !== 'client' && (
-              <div className="grid grid-cols-1 gap-1 border-t border-[#D4D4D4] pt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onTabChange('projects');
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`flex min-h-[40px] items-center justify-between px-3 text-left text-sm ${
-                    activeTab === 'projects'
-                      ? 'bg-[#0A0A0A] font-semibold text-white'
-                      : 'text-[#0A0A0A] hover:bg-[#F4F4F4]'
-                  }`}
-                >
-                  Пульс проектов
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onTabChange('worklog');
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`flex min-h-[40px] items-center justify-between px-3 text-left text-sm ${
-                    activeTab === 'worklog'
-                      ? 'bg-[#0A0A0A] font-semibold text-white'
-                      : 'text-[#0A0A0A] hover:bg-[#F4F4F4]'
-                  }`}
-                >
-                  Журнал выработки и расходов
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onTabChange('team');
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`flex min-h-[40px] items-center justify-between px-3 text-left text-sm ${
-                    activeTab === 'team'
-                      ? 'bg-[#0A0A0A] font-semibold text-white'
-                      : 'text-[#0A0A0A] hover:bg-[#F4F4F4]'
-                  }`}
-                >
-                  Команда и лимит ФОТ
-                </button>
+              <nav className="grid grid-cols-1 gap-1 border-t border-[#D4D4D4] pt-3">
+                {NAV_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      onTabChange(tab.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`flex min-h-[40px] items-center justify-between px-3 text-left text-sm ${
+                      activeTab === tab.id
+                        ? 'bg-[#0A0A0A] font-semibold text-white'
+                        : 'text-[#0A0A0A] hover:bg-[#F4F4F4]'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
                 <button
                   type="button"
                   onClick={() => {
@@ -327,7 +320,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <Database className="h-4 w-4" />
                   Резервная копия (JSON / Сброс)
                 </button>
-              </div>
+              </nav>
             )}
 
             {canCopyClientLink && (
@@ -345,6 +338,12 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               </div>
             )}
+            <div className="border-t border-[#D4D4D4] pt-3 empty:hidden">
+              <PWAInstallButton
+                fullWidth
+                onActionComplete={() => setMobileMenuOpen(false)}
+              />
+            </div>
           </div>
         </div>
       )}

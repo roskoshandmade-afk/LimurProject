@@ -8,6 +8,43 @@ export type AllocationBasis = 'area' | 'hours';
 
 export type DelayReason = 'none' | 'client' | 'studio';
 
+export type PaymentSchemeTemplate = '3-stage-30-50-20' | '2-stage-50-50' | 'custom';
+
+export type CommercialProposalStatus = 'draft' | 'sent' | 'approved';
+export type CommercialProposalObjectType = 'residential' | 'commercial';
+export type CommercialProposalPaymentTemplate = '30_50_20' | '50_50';
+export type CommercialProposalPackageType = 'planning' | 'technical' | 'full';
+
+export interface CommercialProposal {
+  id: string;
+  number: string; // Автонумерация, например КП-2026/001
+  createdAt: string; // YYYY-MM-DD
+  status: CommercialProposalStatus;
+  clientName: string;
+  clientPhone: string;
+  objectTitle: string;
+  city: string;
+  objectType: CommercialProposalObjectType;
+  areaSqm: number;
+  ratePerSqm: number;
+  discountAmount: number;
+  finalContractTotal: number;
+  hasMeasurementAdvance: boolean;
+  measurementAdvanceAmount: number;
+  paymentTemplate: CommercialProposalPaymentTemplate;
+  packageType: CommercialProposalPackageType;
+  customDeliverables: string[];
+  options: {
+    supervision: boolean;
+    sourcing: boolean;
+  };
+  measurementPlanUrl: string;
+  revisionRounds: number;
+  validDays: number;
+  albumFormat?: string;
+  convertedProjectId?: string;
+}
+
 export type ExpenseCategory =
   | 'Печать и альбомы'
   | 'Выкрасы и образцы'
@@ -19,26 +56,54 @@ export type CostRoleGroup =
   | 'Визуализатор'
   | 'Чертёжник'
   | 'Замеры'
+  | 'Комплектатор'
   | 'Руководитель проекта'
   | 'Печать и логистика'
   | 'Прочие роли';
 
+export type ProjectCostRole =
+  | 'Дизайнер'
+  | 'Визуализатор'
+  | 'Чертёжник'
+  | 'Замерщик'
+  | 'Комплектатор'
+  | 'Бензин и печать альбомов';
+
+export type CostLinePayMode = 'piecework' | 'salary' | 'overhead';
+export type SalaryAllocationUnit = 'sqm' | 'days';
+
+export interface ProjectCostLine {
+  id: string;
+  role: ProjectCostRole;
+  assigneeName: string; // Supports совмещение ролей: same person can appear on multiple lines
+  memberId?: string; // Optional link to studio team directory
+  payMode: CostLinePayMode; // 'piecework' | 'salary' | 'overhead'
+  budgetAmount: number; // Used for piecework & overhead; auto-derived for salary
+  paidAmount: number; // Already paid ₽
+  // Salaried staff allocation fields (when payMode === 'salary')
+  monthlySalary?: number;
+  salaryUnit?: SalaryAllocationUnit; // 'sqm' (м²) or 'days' (дни)
+  workedUnits?: number; // Worked м² or days on this project
+  monthlyCapacityUnits?: number; // Total monthly norm (e.g. 22 days or 150 м²)
+  note?: string;
+}
+
 export interface TeamMember {
   id: string;
-  roleTitle: string; // e.g., "Визуализатор", "Дизайнер (ведущий)" — no personal names
-  code: string; // Short code/initials e.g., "ВИЗ", "ДИЗ", "ЧРТ", "ЗМР"
+  roleTitle: string;
+  code: string;
   costGroup: Exclude<CostRoleGroup, 'Печать и логистика'>;
   paymentType: PaymentType;
-  monthlySalary: number; // Used when paymentType === 'salary'
-  allocationBasis: AllocationBasis; // 'area' (м²) or 'hours' (ч)
-  pieceworkRate: number; // Default rate per м² or stage when paymentType === 'piecework'
+  monthlySalary: number;
+  allocationBasis: AllocationBasis;
+  pieceworkRate: number;
   pieceworkUnit: 'м²' | 'этап' | 'выезд';
 }
 
 export interface PaymentStage {
   id: string;
   order: number;
-  title: string; // e.g., "Этап 1. Планировка и концепция"
+  title: string;
   amount: number;
   dueDate: string; // YYYY-MM-DD
   isPaid: boolean;
@@ -48,7 +113,7 @@ export interface PaymentStage {
 export interface WorkSubStage {
   id: string;
   paymentStageId: string;
-  title: string; // e.g., "Замеры", "Стартовые планы", "ТЗ", "Визы кухни и СУ"
+  title: string;
   assigneeId: string; // TeamMember.id or ''
   planStart: string; // YYYY-MM-DD
   planEnd: string; // YYYY-MM-DD
@@ -60,9 +125,9 @@ export interface WorkSubStage {
 }
 
 export interface ProjectLinks {
-  proposalUrl: string; // КП
+  proposalUrl: string; // Коммерческое предложение
   measurementUrl: string; // Обмерный план
-  folderUrl: string; // Папка исходников / материалов
+  folderUrl: string; // Папка с материалами и рендерами
 }
 
 export interface Project {
@@ -71,13 +136,19 @@ export interface Project {
   name: string;
   address: string;
   areaSqm: number;
+  ratePerSqm?: number; // Тариф, ₽/м²
+  contractAmount?: number; // Итоговая сумма по договору (с учётом округления/скидки)
+  paymentScheme?: PaymentSchemeTemplate;
+  separateMeasurementFee?: boolean;
+  measurementFeeAmount?: number;
   status: ProjectStatus;
   clientContact: string;
   startDate: string; // YYYY-MM-DD
-  fotLimitPercent: number; // e.g. 40
+  fotLimitPercent: number; // Default 45
   plannedCategoryBudgets?: Partial<Record<CostRoleGroup, number>>;
   links: ProjectLinks;
   teamIds: string[];
+  costLines?: ProjectCostLine[]; // Детальные строки команды, совмещения ролей и накладных расходов
   paymentStages: PaymentStage[];
   workStages: WorkSubStage[];
 }
@@ -88,9 +159,9 @@ export interface WorklogEntry {
   memberId: string;
   month: string; // YYYY-MM
   date: string; // YYYY-MM-DD
-  areaSqm: number; // Worked м² (for salaried allocation or piecework)
-  hours: number; // Worked hours (for salaried allocation)
-  pieceworkAmount: number; // Direct accrued ₽ for piecework roles
+  areaSqm: number;
+  hours: number;
+  pieceworkAmount: number;
   comment: string;
 }
 
@@ -115,6 +186,7 @@ export interface AppData {
   projects: Project[];
   worklogs: WorklogEntry[];
   expenses: DirectExpense[];
+  commercialProposals: CommercialProposal[];
 }
 
 export interface SalaryAllocationDetail {
@@ -147,6 +219,8 @@ export interface ProjectFinanceSummary {
   fotTotal: number; // allocatedSalaryTotal + pieceworkTotal
   directExpensesTotal: number;
   totalCosts: number;
+  totalCostsPaid: number;
+  totalCostsRemaining: number;
   netBalanceFromPaid: number; // paidTotal - totalCosts
   projectedMarginAmount: number; // contractTotal - totalCosts
   projectedMarginPercent: number; // (contractTotal - totalCosts) / contractTotal * 100
