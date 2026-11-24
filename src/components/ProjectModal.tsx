@@ -1,5 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Calculator, FileText, FolderOpen, Plus, RefreshCw, Ruler, Trash2, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AlertTriangle,
+  Calculator,
+  FileText,
+  FolderOpen,
+  Plus,
+  RefreshCw,
+  Ruler,
+  Trash2,
+  X,
+} from 'lucide-react';
 import {
   buildPaymentStagesForScheme,
   createId,
@@ -23,7 +33,81 @@ interface ProjectModalProps {
   onClose: () => void;
 }
 
+interface EditablePaymentStage extends Omit<PaymentStage, 'amount'> {
+  amountInput: string;
+}
+
+interface FormSnapshotInput {
+  name: string;
+  address: string;
+  areaSqm: string;
+  ratePerSqm: string;
+  contractAmount: string;
+  paymentScheme: PaymentSchemeTemplate;
+  separateMeasurementFee: boolean;
+  measurementFeeAmount: string;
+  status: ProjectStatus;
+  clientContact: string;
+  startDate: string;
+  fotLimitPercent: string;
+  proposalUrl: string;
+  measurementUrl: string;
+  folderUrl: string;
+  teamIds: string[];
+  paymentStages: EditablePaymentStage[];
+  useTemplateWorkStages: boolean;
+}
+
 const STATUSES: ProjectStatus[] = ['В работе', 'На паузе', 'Заморожен', 'Сдан'];
+
+function parseNonNegativeNumber(raw: string): number {
+  const normalized = raw.replace(',', '.').trim();
+  if (!normalized) return 0;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function toEditableStages(stages: PaymentStage[]): EditablePaymentStage[] {
+  return stages.map((ps) => ({
+    id: ps.id,
+    order: ps.order,
+    title: ps.title,
+    dueDate: ps.dueDate,
+    isPaid: ps.isPaid,
+    paidDate: ps.paidDate,
+    amountInput: String(ps.amount ?? 0),
+  }));
+}
+
+function serializeFormSnapshot(input: FormSnapshotInput): string {
+  return JSON.stringify({
+    name: input.name,
+    address: input.address,
+    areaSqm: input.areaSqm,
+    ratePerSqm: input.ratePerSqm,
+    contractAmount: input.contractAmount,
+    paymentScheme: input.paymentScheme,
+    separateMeasurementFee: input.separateMeasurementFee,
+    measurementFeeAmount: input.measurementFeeAmount,
+    status: input.status,
+    clientContact: input.clientContact,
+    startDate: input.startDate,
+    fotLimitPercent: input.fotLimitPercent,
+    proposalUrl: input.proposalUrl,
+    measurementUrl: input.measurementUrl,
+    folderUrl: input.folderUrl,
+    teamIds: input.teamIds,
+    paymentStages: input.paymentStages.map((ps) => ({
+      id: ps.id,
+      title: ps.title,
+      amountInput: ps.amountInput,
+      dueDate: ps.dueDate,
+      isPaid: ps.isPaid,
+      paidDate: ps.paidDate,
+    })),
+    useTemplateWorkStages: input.useTemplateWorkStages,
+  });
+}
 
 export const ProjectModal: React.FC<ProjectModalProps> = ({
   open,
@@ -55,69 +139,132 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   const [measurementUrl, setMeasurementUrl] = useState('');
   const [folderUrl, setFolderUrl] = useState('');
   const [teamIds, setTeamIds] = useState<string[]>([]);
-  const [paymentStages, setPaymentStages] = useState<PaymentStage[]>([]);
+  const [paymentStages, setPaymentStages] = useState<EditablePaymentStage[]>([]);
   const [useTemplateWorkStages, setUseTemplateWorkStages] = useState(true);
   const [error, setError] = useState('');
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
 
-  // Initialize form whenever modal opens
+  // Strict open-session isolation refs so background sync / parent re-renders / mobile resize NEVER wipe form state
+  const wasOpenRef = useRef(false);
+  const initializedSessionKeyRef = useRef<string | null>(null);
+  const initialSnapshotRef = useRef<string>('');
+  const latestEditingProjectRef = useRef<Project | null>(editingProject);
+  const latestTeamRef = useRef<TeamMember[]>(team);
+  const latestDefaultFotRef = useRef<number>(defaultFotLimitPercent);
+
+  latestEditingProjectRef.current = editingProject;
+  latestTeamRef.current = team;
+  latestDefaultFotRef.current = defaultFotLimitPercent;
+
+  const editingProjectId = editingProject?.id ?? null;
+
+  // Initialize form STRICTLY ONCE when modal transitions closed -> open or switches to a different project ID
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      wasOpenRef.current = false;
+      initializedSessionKeyRef.current = null;
+      initialSnapshotRef.current = '';
+      setConfirmDiscardOpen(false);
+      return;
+    }
+
+    const sessionKey = editingProjectId ? `edit:${editingProjectId}` : 'new';
+    if (wasOpenRef.current && initializedSessionKeyRef.current === sessionKey) {
+      return;
+    }
+
+    wasOpenRef.current = true;
+    initializedSessionKeyRef.current = sessionKey;
     setError('');
-    if (editingProject) {
-      const stagesTotal = editingProject.paymentStages.reduce(
+    setConfirmDiscardOpen(false);
+
+    const targetProject = latestEditingProjectRef.current;
+    const currentTeam = latestTeamRef.current;
+    const fallbackFot = latestDefaultFotRef.current || 45;
+
+    if (targetProject) {
+      const stagesTotal = targetProject.paymentStages.reduce(
         (acc, ps) => acc + (Number(ps.amount) || 0),
         0
       );
-      const area = editingProject.areaSqm || 0;
+      const area = targetProject.areaSqm || 0;
       const inferredRate =
-        editingProject.ratePerSqm ??
+        targetProject.ratePerSqm ??
         (area > 0 && stagesTotal > 0 ? Math.round(stagesTotal / area) : 2500);
-      const finalContract = editingProject.contractAmount ?? stagesTotal;
+      const finalContract = targetProject.contractAmount ?? stagesTotal;
 
-      setName(editingProject.name);
-      setAddress(editingProject.address);
-      setAreaSqm(String(area));
-      setRatePerSqm(String(inferredRate));
-      setContractAmount(String(finalContract));
+      const initName = targetProject.name;
+      const initAddress = targetProject.address;
+      const initArea = String(area);
+      const initRate = String(inferredRate);
+      const initContract = String(finalContract);
+      const initScheme: PaymentSchemeTemplate =
+        targetProject.paymentScheme || '3-stage-30-50-20';
+      const initSeparateMeas = targetProject.separateMeasurementFee ?? false;
+      const initMeasFee = String(targetProject.measurementFeeAmount ?? 10000);
+      const initStatus = targetProject.status;
+      const initContact = targetProject.clientContact;
+      const initStartDate = targetProject.startDate || getTodayIso();
+      const initFot = String(targetProject.fotLimitPercent || fallbackFot);
+      const initProposalUrl = targetProject.links.proposalUrl;
+      const initMeasurementUrl = targetProject.links.measurementUrl;
+      const initFolderUrl = targetProject.links.folderUrl;
+      const initTeamIds = [...targetProject.teamIds];
+      const initStages = toEditableStages(targetProject.paymentStages);
+
+      setName(initName);
+      setAddress(initAddress);
+      setAreaSqm(initArea);
+      setRatePerSqm(initRate);
+      setContractAmount(initContract);
       setContractManuallyEdited(true);
-      setPaymentScheme(editingProject.paymentScheme || '3-stage-30-50-20');
-      setSeparateMeasurementFee(editingProject.separateMeasurementFee ?? false);
-      setMeasurementFeeAmount(String(editingProject.measurementFeeAmount ?? 10000));
-      setStatus(editingProject.status);
-      setClientContact(editingProject.clientContact);
-      setStartDate(editingProject.startDate || getTodayIso());
-      setFotLimitPercent(String(editingProject.fotLimitPercent || defaultFotLimitPercent || 45));
-      setProposalUrl(editingProject.links.proposalUrl);
-      setMeasurementUrl(editingProject.links.measurementUrl);
-      setFolderUrl(editingProject.links.folderUrl);
-      setTeamIds(editingProject.teamIds);
-      setPaymentStages(editingProject.paymentStages.map((ps) => ({ ...ps })));
+      setPaymentScheme(initScheme);
+      setSeparateMeasurementFee(initSeparateMeas);
+      setMeasurementFeeAmount(initMeasFee);
+      setStatus(initStatus);
+      setClientContact(initContact);
+      setStartDate(initStartDate);
+      setFotLimitPercent(initFot);
+      setProposalUrl(initProposalUrl);
+      setMeasurementUrl(initMeasurementUrl);
+      setFolderUrl(initFolderUrl);
+      setTeamIds(initTeamIds);
+      setPaymentStages(initStages);
       setUseTemplateWorkStages(false);
+
+      initialSnapshotRef.current = serializeFormSnapshot({
+        name: initName,
+        address: initAddress,
+        areaSqm: initArea,
+        ratePerSqm: initRate,
+        contractAmount: initContract,
+        paymentScheme: initScheme,
+        separateMeasurementFee: initSeparateMeas,
+        measurementFeeAmount: initMeasFee,
+        status: initStatus,
+        clientContact: initContact,
+        startDate: initStartDate,
+        fotLimitPercent: initFot,
+        proposalUrl: initProposalUrl,
+        measurementUrl: initMeasurementUrl,
+        folderUrl: initFolderUrl,
+        teamIds: initTeamIds,
+        paymentStages: initStages,
+        useTemplateWorkStages: false,
+      });
     } else {
       const today = getTodayIso();
       const defaultArea = 90;
       const defaultRate = 2500;
       const defaultContract = defaultArea * defaultRate;
       const defaultScheme: Exclude<PaymentSchemeTemplate, 'custom'> = '3-stage-30-50-20';
-
-      setName('');
-      setAddress('');
-      setAreaSqm(String(defaultArea));
-      setRatePerSqm(String(defaultRate));
-      setContractAmount(String(defaultContract));
-      setContractManuallyEdited(false);
-      setPaymentScheme(defaultScheme);
-      setSeparateMeasurementFee(true);
-      setMeasurementFeeAmount('10000');
-      setStatus('В работе');
-      setClientContact('');
-      setStartDate(today);
-      setFotLimitPercent(String(defaultFotLimitPercent || 45));
-      setProposalUrl('');
-      setMeasurementUrl('');
-      setFolderUrl('');
-      setTeamIds(team.map((m) => m.id));
-      setPaymentStages(
+      const initArea = String(defaultArea);
+      const initRate = String(defaultRate);
+      const initContract = String(defaultContract);
+      const initMeasFee = '10000';
+      const initFot = String(fallbackFot);
+      const initTeamIds = currentTeam.map((m) => m.id);
+      const initStages = toEditableStages(
         buildPaymentStagesForScheme({
           scheme: defaultScheme,
           contractTotal: defaultContract,
@@ -126,15 +273,127 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           measurementFeeAmount: 10000,
         })
       );
-      setUseTemplateWorkStages(true);
-    }
-  }, [open, editingProject, team, defaultFotLimitPercent]);
 
-  const numericArea = Math.max(0, Number(areaSqm) || 0);
-  const numericRate = Math.max(0, Number(ratePerSqm) || 0);
+      setName('');
+      setAddress('');
+      setAreaSqm(initArea);
+      setRatePerSqm(initRate);
+      setContractAmount(initContract);
+      setContractManuallyEdited(false);
+      setPaymentScheme(defaultScheme);
+      setSeparateMeasurementFee(true);
+      setMeasurementFeeAmount(initMeasFee);
+      setStatus('В работе');
+      setClientContact('');
+      setStartDate(today);
+      setFotLimitPercent(initFot);
+      setProposalUrl('');
+      setMeasurementUrl('');
+      setFolderUrl('');
+      setTeamIds(initTeamIds);
+      setPaymentStages(initStages);
+      setUseTemplateWorkStages(true);
+
+      initialSnapshotRef.current = serializeFormSnapshot({
+        name: '',
+        address: '',
+        areaSqm: initArea,
+        ratePerSqm: initRate,
+        contractAmount: initContract,
+        paymentScheme: defaultScheme,
+        separateMeasurementFee: true,
+        measurementFeeAmount: initMeasFee,
+        status: 'В работе',
+        clientContact: '',
+        startDate: today,
+        fotLimitPercent: initFot,
+        proposalUrl: '',
+        measurementUrl: '',
+        folderUrl: '',
+        teamIds: initTeamIds,
+        paymentStages: initStages,
+        useTemplateWorkStages: true,
+      });
+    }
+  }, [open, editingProjectId]);
+
+  const currentSnapshot = useMemo(
+    () =>
+      serializeFormSnapshot({
+        name,
+        address,
+        areaSqm,
+        ratePerSqm,
+        contractAmount,
+        paymentScheme,
+        separateMeasurementFee,
+        measurementFeeAmount,
+        status,
+        clientContact,
+        startDate,
+        fotLimitPercent,
+        proposalUrl,
+        measurementUrl,
+        folderUrl,
+        teamIds,
+        paymentStages,
+        useTemplateWorkStages,
+      }),
+    [
+      name,
+      address,
+      areaSqm,
+      ratePerSqm,
+      contractAmount,
+      paymentScheme,
+      separateMeasurementFee,
+      measurementFeeAmount,
+      status,
+      clientContact,
+      startDate,
+      fotLimitPercent,
+      proposalUrl,
+      measurementUrl,
+      folderUrl,
+      teamIds,
+      paymentStages,
+      useTemplateWorkStages,
+    ]
+  );
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (!open || !initialSnapshotRef.current) return false;
+    return currentSnapshot !== initialSnapshotRef.current;
+  }, [open, currentSnapshot]);
+
+  const requestClose = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setConfirmDiscardOpen(true);
+      return;
+    }
+    onClose();
+  }, [hasUnsavedChanges, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      if (confirmDiscardOpen) {
+        setConfirmDiscardOpen(false);
+        return;
+      }
+      requestClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, confirmDiscardOpen, requestClose]);
+
+  const numericArea = parseNonNegativeNumber(areaSqm);
+  const numericRate = parseNonNegativeNumber(ratePerSqm);
   const calculatedBaseAmount = Math.round(numericArea * numericRate);
-  const numericContract = Math.max(0, Number(contractAmount) || 0);
-  const numericMeasFee = Math.max(0, Number(measurementFeeAmount) || 0);
+  const numericContract = parseNonNegativeNumber(contractAmount);
+  const numericMeasFee = parseNonNegativeNumber(measurementFeeAmount);
 
   const discountInfo = useMemo(() => {
     const diff = calculatedBaseAmount - numericContract;
@@ -150,7 +409,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   }, [calculatedBaseAmount, numericContract]);
 
   const stagesSum = useMemo(
-    () => paymentStages.reduce((acc, ps) => acc + (Number(ps.amount) || 0), 0),
+    () =>
+      paymentStages.reduce((acc, ps) => acc + parseNonNegativeNumber(ps.amountInput), 0),
     [paymentStages]
   );
 
@@ -164,19 +424,25 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     const effectiveScheme: Exclude<PaymentSchemeTemplate, 'custom'> =
       params.scheme === '2-stage-50-50' ? '2-stage-50-50' : '3-stage-30-50-20';
     setPaymentStages(
-      buildPaymentStagesForScheme({
-        scheme: effectiveScheme,
-        contractTotal: params.total,
-        startDate: params.date,
-        separateMeasurementFee: params.separateMeas,
-        measurementFeeAmount: params.measFee,
-      })
+      toEditableStages(
+        buildPaymentStagesForScheme({
+          scheme: effectiveScheme,
+          contractTotal: params.total,
+          startDate: params.date,
+          separateMeasurementFee: params.separateMeas,
+          measurementFeeAmount: params.measFee,
+        })
+      )
     );
   };
 
   const handleAreaChange = (val: string) => {
     setAreaSqm(val);
-    const nextArea = Math.max(0, Number(val) || 0);
+    if (val.trim() === '') {
+      return;
+    }
+
+    const nextArea = parseNonNegativeNumber(val);
     const nextCalc = Math.round(nextArea * numericRate);
 
     if (!editingProject) {
@@ -202,7 +468,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
 
   const handleRateChange = (val: string) => {
     setRatePerSqm(val);
-    const nextRate = Math.max(0, Number(val) || 0);
+    if (val.trim() === '') {
+      return;
+    }
+
+    const nextRate = parseNonNegativeNumber(val);
     const nextCalc = Math.round(numericArea * nextRate);
     if (!editingProject && !contractManuallyEdited) {
       setContractAmount(String(nextCalc));
@@ -219,7 +489,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   const handleContractAmountChange = (val: string) => {
     setContractAmount(val);
     setContractManuallyEdited(true);
-    const nextTotal = Math.max(0, Number(val) || 0);
+    if (val.trim() === '') {
+      return;
+    }
+
+    const nextTotal = parseNonNegativeNumber(val);
     if (!editingProject && paymentScheme !== 'custom') {
       recalculateStages({
         scheme: paymentScheme,
@@ -257,7 +531,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
 
   const handleMeasurementFeeChange = (val: string) => {
     setMeasurementFeeAmount(val);
-    const nextFee = Math.max(0, Number(val) || 0);
+    if (val.trim() === '') {
+      return;
+    }
+
+    const nextFee = parseNonNegativeNumber(val);
     if (separateMeasurementFee && (!editingProject || paymentScheme !== 'custom')) {
       recalculateStages({
         scheme: paymentScheme,
@@ -284,7 +562,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         id: createId('ps'),
         order: prev.length + 1,
         title: `Этап ${prev.length + 1}. Новый этап`,
-        amount: 0,
+        amountInput: '',
         dueDate: startDate || getTodayIso(),
         isPaid: false,
         paidDate: '',
@@ -292,7 +570,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     ]);
   };
 
-  const updatePaymentStage = (id: string, patch: Partial<PaymentStage>) => {
+  const updatePaymentStage = (id: string, patch: Partial<EditablePaymentStage>) => {
     setPaymentStages((prev) =>
       prev.map((ps) => (ps.id === id ? { ...ps, ...patch } : ps))
     );
@@ -313,19 +591,23 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       return;
     }
 
-    const parsedArea = Math.max(0, Number(areaSqm) || 0);
-    const parsedRate = Math.max(0, Number(ratePerSqm) || 0);
+    const parsedArea = parseNonNegativeNumber(areaSqm);
+    const parsedRate = parseNonNegativeNumber(ratePerSqm);
     const parsedLimit = Math.min(
       100,
-      Math.max(5, Number(fotLimitPercent) || defaultFotLimitPercent || 45)
+      Math.max(5, parseNonNegativeNumber(fotLimitPercent) || defaultFotLimitPercent || 45)
     );
-    const normalizedStages = paymentStages.map((ps, idx) => ({
-      ...ps,
+    const normalizedStages: PaymentStage[] = paymentStages.map((ps, idx) => ({
+      id: ps.id,
       order: idx + 1,
-      amount: Math.max(0, Number(ps.amount) || 0),
+      title: ps.title,
+      amount: Math.round(parseNonNegativeNumber(ps.amountInput)),
+      dueDate: ps.dueDate,
+      isPaid: ps.isPaid,
+      paidDate: ps.paidDate,
     }));
     const finalSum =
-      normalizedStages.reduce((acc, s) => acc + s.amount, 0) || numericContract;
+      normalizedStages.reduce((acc, s) => acc + s.amount, 0) || Math.round(numericContract);
 
     const isNew = !editingProject;
     const workStages = editingProject
@@ -344,7 +626,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       contractAmount: finalSum,
       paymentScheme,
       separateMeasurementFee,
-      measurementFeeAmount: separateMeasurementFee ? numericMeasFee : 0,
+      measurementFeeAmount: separateMeasurementFee ? Math.round(numericMeasFee) : 0,
       status,
       clientContact: clientContact.trim(),
       startDate: startDate || getTodayIso(),
@@ -373,8 +655,17 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="project-modal-title"
+      onClick={(e) => {
+        // Protect mobile users from accidental overlay tap once any field has been edited
+        if (e.target === e.currentTarget && !hasUnsavedChanges) {
+          onClose();
+        }
+      }}
     >
-      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col border border-[#0A0A0A] bg-white">
+      <div
+        className="relative flex max-h-[92vh] w-full max-w-4xl flex-col border border-[#0A0A0A] bg-white"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#0A0A0A] px-6 py-4">
           <div>
@@ -390,7 +681,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="flex h-8 w-8 items-center justify-center text-[#525252] hover:bg-[#F4F4F4] hover:text-[#0A0A0A]"
             aria-label="Закрыть"
           >
@@ -470,6 +761,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                     <label className="mb-1 block text-xs text-[#525252]">Лимит ФОТ, %</label>
                     <input
                       type="number"
+                      inputMode="numeric"
                       min="5"
                       max="100"
                       value={fotLimitPercent}
@@ -570,6 +862,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                   </label>
                   <input
                     type="number"
+                    inputMode="decimal"
                     min="0"
                     step="0.5"
                     value={areaSqm}
@@ -584,6 +877,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
                     min="0"
                     step="100"
                     value={ratePerSqm}
@@ -607,6 +901,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
                     min="0"
                     step="1000"
                     value={contractAmount}
@@ -656,6 +951,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                     <div className="flex items-center gap-2 shrink-0">
                       <input
                         type="number"
+                        inputMode="numeric"
                         min="0"
                         step="1000"
                         value={measurementFeeAmount}
@@ -778,11 +1074,12 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                     <div className="sm:col-span-3">
                       <input
                         type="number"
+                        inputMode="numeric"
                         min="0"
                         step="1000"
-                        value={ps.amount}
+                        value={ps.amountInput}
                         onChange={(e) =>
-                          updatePaymentStage(ps.id, { amount: Number(e.target.value) || 0 })
+                          updatePaymentStage(ps.id, { amountInput: e.target.value })
                         }
                         placeholder="Сумма ₽"
                         className="h-9 w-full border border-[#D4D4D4] bg-white px-2.5 font-mono text-xs font-semibold tabular-nums text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none"
@@ -867,7 +1164,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           <div className="mt-6 flex items-center justify-end gap-3 border-t border-[#0A0A0A] pt-5">
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               className="min-h-[40px] border border-[#0A0A0A] bg-white px-5 py-2 text-xs font-medium text-[#0A0A0A] transition-colors hover:bg-[#F4F4F4]"
             >
               Отмена
@@ -880,6 +1177,55 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
             </button>
           </div>
         </form>
+
+        {/* Unsaved Changes Discard Confirmation Overlay */}
+        {confirmDiscardOpen && (
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center bg-black/45 p-4"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="discard-project-changes-title"
+          >
+            <div className="w-full max-w-md border border-[#0A0A0A] bg-white p-5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center border border-[#0A0A0A] bg-[#F4F4F4] text-[#0A0A0A]">
+                  <AlertTriangle className="h-4 w-4" />
+                </span>
+                <div>
+                  <h3
+                    id="discard-project-changes-title"
+                    className="text-sm font-bold text-[#0A0A0A]"
+                  >
+                    Закрыть без сохранения?
+                  </h3>
+                  <p className="mt-1.5 text-xs leading-relaxed text-[#525252]">
+                    В форме есть несохранённые изменения. Если закрыть окно сейчас, введённые данные
+                    будут потеряны.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmDiscardOpen(false);
+                    onClose();
+                  }}
+                  className="min-h-[38px] border border-[#DC2626] bg-white px-4 py-2 text-xs font-semibold text-[#DC2626] transition-colors hover:bg-[#DC2626] hover:text-white"
+                >
+                  Закрыть без сохранения
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDiscardOpen(false)}
+                  className="min-h-[38px] bg-[#0A0A0A] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#262626]"
+                >
+                  Продолжить заполнение
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -132,6 +132,10 @@ export default function App() {
   const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
   const [installModalOpen, setInstallModalOpen] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  const projectModalOpenRef = useRef(projectModalOpen);
+  const deferredReconcileAfterModalRef = useRef(false);
+  projectModalOpenRef.current = projectModalOpen;
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
     title: string;
@@ -398,6 +402,12 @@ export default function App() {
       }
 
       // STEP 3: No pending local changes -> safe to fetch fresh state from cloud
+      // Never pull/overwrite studioState while the project creation/edit modal is open
+      if (projectModalOpenRef.current) {
+        deferredReconcileAfterModalRef.current = true;
+        return;
+      }
+
       isSyncingRef.current = true;
       realtimeAcceptingRef.current = false;
       needsResyncAfterCurrentRef.current = false;
@@ -412,6 +422,12 @@ export default function App() {
       try {
         const res = await fetchStudioState();
         if (!mountedRef.current) return;
+
+        // If user opened the project modal mid-flight, defer applying remote snapshot until modal closes
+        if (projectModalOpenRef.current) {
+          deferredReconcileAfterModalRef.current = true;
+          return;
+        }
 
         // Re-check dirty flag after network roundtrip: NEVER overwrite mid-flight local edits!
         if (
@@ -651,13 +667,17 @@ export default function App() {
       (remoteData) => {
         if (!active) return;
 
-        // STRICT BLOCK: never apply incoming cloud data while local changes are pending or syncing
+        // STRICT BLOCK: never apply incoming cloud data while local changes are pending, syncing, or project modal is open
         if (
           syncMetaRef.current.hasPendingChanges ||
           loadSyncMeta().hasPendingChanges ||
           isSyncingRef.current ||
-          !realtimeAcceptingRef.current
+          !realtimeAcceptingRef.current ||
+          projectModalOpenRef.current
         ) {
+          if (projectModalOpenRef.current) {
+            deferredReconcileAfterModalRef.current = true;
+          }
           return;
         }
 
@@ -704,11 +724,15 @@ export default function App() {
     };
   }, [reconcileWithCloud, syncGeneration]);
 
-  // 2b. Silent REST polling fallback when Realtime channel is unavailable (strictly respects dirty flag)
+  // 2b. Silent REST polling fallback when Realtime channel is unavailable (strictly respects dirty flag & open modal)
   useEffect(() => {
     if (realtimeStatus !== 'error') return;
 
     const timer = window.setInterval(() => {
+      if (projectModalOpenRef.current) {
+        deferredReconcileAfterModalRef.current = true;
+        return;
+      }
       if (
         !mountedRef.current ||
         document.visibilityState !== 'visible' ||
@@ -726,6 +750,19 @@ export default function App() {
       window.clearInterval(timer);
     };
   }, [realtimeStatus, reconcileWithCloud]);
+
+  // 2c. Apply deferred cloud reconciliation once ProjectModal closes (only if no pending local edits)
+  useEffect(() => {
+    if (projectModalOpen || !deferredReconcileAfterModalRef.current) return;
+    deferredReconcileAfterModalRef.current = false;
+    if (
+      !syncMetaRef.current.hasPendingChanges &&
+      !loadSyncMeta().hasPendingChanges &&
+      (typeof navigator === 'undefined' || navigator.onLine)
+    ) {
+      void reconcileWithCloud('visibility');
+    }
+  }, [projectModalOpen, reconcileWithCloud]);
 
   // 3. Browser online / offline + document visibilitychange event listeners
   useEffect(() => {
@@ -1020,21 +1057,29 @@ export default function App() {
   };
 
   // Project CRUD
-  const handleSaveProject = (project: Project, isNew: boolean) => {
-    applyLocalChange((prev) => ({
-      ...prev,
-      projects: isNew
-        ? [project, ...prev.projects]
-        : prev.projects.map((p) => (p.id === project.id ? project : p)),
-    }));
-    if (isNew) {
-      setSelectedProjectId(project.id);
-      setActiveTab('projects');
-      notify(`Проект «${project.name}» создан`);
-    } else {
-      notify('Изменения проекта сохранены');
-    }
-  };
+  const handleSaveProject = useCallback(
+    (project: Project, isNew: boolean) => {
+      applyLocalChange((prev) => ({
+        ...prev,
+        projects: isNew
+          ? [project, ...prev.projects]
+          : prev.projects.map((p) => (p.id === project.id ? project : p)),
+      }));
+      if (isNew) {
+        setSelectedProjectId(project.id);
+        setActiveTab('projects');
+        notify(`Проект «${project.name}» создан`);
+      } else {
+        notify('Изменения проекта сохранены');
+      }
+    },
+    [applyLocalChange, notify]
+  );
+
+  const handleCloseProjectModal = useCallback(() => {
+    setProjectModalOpen(false);
+    setEditingProject(null);
+  }, []);
 
   const handleUpdateProject = (updated: Project) => {
     applyLocalChange((prev) => ({
@@ -1344,10 +1389,7 @@ export default function App() {
           team={data.team}
           defaultFotLimitPercent={data.settings.defaultFotLimitPercent}
           onSave={handleSaveProject}
-          onClose={() => {
-            setProjectModalOpen(false);
-            setEditingProject(null);
-          }}
+          onClose={handleCloseProjectModal}
         />
 
         <DataBackupModal
