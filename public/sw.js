@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-globals */
 
 const CACHE_PREFIX = 'limur-project-shell-';
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 const CORE_SHELL_PATHS = [
@@ -10,6 +10,8 @@ const CORE_SHELL_PATHS = [
   './manifest.json',
   './favicon.svg',
   './icon.svg',
+  './icon-192.png',
+  './icon-512.png',
   './apple-touch-icon.png',
   './pwa-192x192.png',
   './pwa-512x512.png',

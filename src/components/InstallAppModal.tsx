@@ -150,10 +150,10 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto border border-[#0A0A0A] bg-white p-5 sm:p-6 text-[#0A0A0A]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header with official rectangular LI.MUR / PROJECT logo */}
+        {/* Header with official full LI.MUR PROJECT — «твой интерьер» logo */}
         <div className="flex items-start justify-between gap-4 border-b border-[#0A0A0A] pb-4">
           <div>
-            <LimurLogo className="h-10 w-auto shrink-0" />
+            <LimurLogo className="h-14 w-auto shrink-0" />
             <h2
               id="install-app-modal-title"
               className="mt-3 text-base font-bold tracking-tight text-[#0A0A0A]"
@@ -257,7 +257,7 @@ export const MobileInstallBanner: React.FC<MobileInstallBannerProps> = ({
     >
       <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <LimurLogo className="h-8 w-auto shrink-0" />
+          <LimurLogo className="h-10 w-auto shrink-0" />
           <div className="min-w-0">
             <div className="truncate text-xs font-bold text-[#0A0A0A]">
               Установить на телефон

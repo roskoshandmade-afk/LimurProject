@@ -142,7 +142,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="no-print sticky top-0 z-30 border-b border-[#0A0A0A] bg-white">
       {/* Primary Top Bar */}
-      <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-14 sm:h-16 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Zone 1: Brand Logo + Live Sync Status */}
         <div className="flex items-center gap-3.5 shrink-0">
           <button
@@ -151,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex shrink-0 items-center transition-opacity hover:opacity-80"
             aria-label="LI.MUR PROJECT — на главную"
           >
-            <LimurLogo className="h-9 w-auto shrink-0" />
+            <LimurLogo className="h-10 w-auto shrink-0 sm:h-12" />
           </button>
           <span className="h-3.5 w-px bg-[#D4D4D4]" aria-hidden="true" />
           <SyncIndicator

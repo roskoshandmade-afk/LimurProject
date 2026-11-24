@@ -171,8 +171,8 @@ export async function exportProposalPdf({
   doc.line(marginX, y, marginX + contentW, y);
   y += 4;
 
-  // Left: Official rectangular framed logo LI.MUR / PROJECT + subtitle
-  const mastheadLogo = await drawLimurLogoPdf(doc, marginX, y, 42);
+  // Left: Official full logo LI.MUR PROJECT — «твой интерьер» + subtitle
+  const mastheadLogo = await drawLimurLogoPdf(doc, marginX, y, 36);
 
   doc.setFont('ArchSans', 'normal');
   doc.setFontSize(7.8);
@@ -180,19 +180,19 @@ export async function exportProposalPdf({
   doc.text(
     'Студия архитектуры и дизайна интерьера  ·  limurproject.ru',
     marginX,
-    y + mastheadLogo.heightMm + 3.8
+    y + mastheadLogo.heightMm + 3.4
   );
 
   // Right: Document badge, KP number, date & validity
   doc.setFont('ArchSans', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(82, 82, 82);
-  doc.text('КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ', marginX + contentW, y + 3.4, { align: 'right' });
+  doc.text('КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ', marginX + contentW, y + 5.5, { align: 'right' });
 
   doc.setFont('ArchMono', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(10, 10, 10);
-  doc.text(proposal.number, marginX + contentW, y + 8.8, { align: 'right' });
+  doc.text(proposal.number, marginX + contentW, y + 11.2, { align: 'right' });
 
   doc.setFont('ArchMono', 'normal');
   doc.setFontSize(7.5);
@@ -200,11 +200,11 @@ export async function exportProposalPdf({
   doc.text(
     `от ${createdFormatted}  ·  действительно до ${validUntilFormatted}`,
     marginX + contentW,
-    y + 13.4,
+    y + 16,
     { align: 'right' }
   );
 
-  y += mastheadLogo.heightMm + 6.8;
+  y += mastheadLogo.heightMm + 6.4;
   doc.setDrawColor(10, 10, 10);
   doc.setLineWidth(0.6);
   doc.line(marginX, y, marginX + contentW, y);
@@ -702,7 +702,7 @@ export async function exportProposalPdf({
   // =========================================================================
   // 6. SIGNATURE & CONTACTS BLOCK
   // =========================================================================
-  ensureSpace(40);
+  ensureSpace(48);
   doc.setDrawColor(10, 10, 10);
   doc.setLineWidth(0.6);
   doc.line(marginX, y, marginX + contentW, y);
@@ -711,8 +711,8 @@ export async function exportProposalPdf({
   const sigColW = (contentW - 14) / 2;
   const rightColX = marginX + sigColW + 14;
 
-  // Left: Studio block with compact rectangular LI.MUR PROJECT logo
-  const footerLogo = await drawLimurLogoPdf(doc, marginX, y, 28);
+  // Left: Studio block with compact full LI.MUR PROJECT logo
+  const footerLogo = await drawLimurLogoPdf(doc, marginX, y, 24);
 
   doc.setFont('ArchSans', 'normal');
   doc.setFontSize(7.8);
@@ -720,13 +720,13 @@ export async function exportProposalPdf({
   doc.text(
     'Архитектурное проектирование и дизайн интерьеров',
     marginX,
-    y + footerLogo.heightMm + 3.6
+    y + footerLogo.heightMm + 3.2
   );
 
   doc.setFont('ArchMono', 'normal');
   doc.setFontSize(7.8);
   doc.setTextColor(10, 10, 10);
-  doc.textWithLink('https://limurproject.ru', marginX, y + footerLogo.heightMm + 7.8, {
+  doc.textWithLink('https://limurproject.ru', marginX, y + footerLogo.heightMm + 7.4, {
     url: 'https://limurproject.ru',
   });
 
@@ -749,7 +749,7 @@ export async function exportProposalPdf({
   }
 
   // Signature hairlines
-  const sigLineY = y + footerLogo.heightMm + 18;
+  const sigLineY = y + footerLogo.heightMm + 16;
   doc.setDrawColor(17, 24, 39);
   doc.setLineWidth(0.3);
   doc.line(marginX, sigLineY, marginX + sigColW, sigLineY);
@@ -779,7 +779,7 @@ export async function exportProposalPdf({
     doc.setFontSize(7.4);
     doc.setTextColor(115, 115, 115);
     doc.text(
-      `LIMUR PROJECT  ·  limurproject.ru  ·  Коммерческое предложение ${proposal.number}`,
+      `LI.MUR PROJECT  ·  limurproject.ru  ·  Коммерческое предложение ${proposal.number}`,
       marginX,
       footerY
     );

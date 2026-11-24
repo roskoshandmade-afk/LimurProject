@@ -83,9 +83,9 @@ export const ClientView: React.FC<ClientViewProps> = ({
       {/* Minimal locked client top line (no role switcher, no other projects) */}
       {isLockedClient && (
         <header className="border-b border-[#0A0A0A] bg-white">
-          <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto flex h-14 sm:h-16 max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3.5">
-              <LimurLogo className="h-9 w-auto shrink-0" />
+              <LimurLogo className="h-10 w-auto shrink-0 sm:h-12" />
               {syncStatus && (
                 <>
                   <span className="h-3.5 w-px bg-[#D4D4D4]" aria-hidden="true" />

@@ -132,19 +132,19 @@ export async function exportProjectFinancialPdf(project: ExportableProject): Pro
   doc.line(marginX, y, marginX + contentW, y);
   y += 3.5;
 
-  const mastheadLogo = await drawLimurLogoPdf(doc, marginX, y, 36);
+  const mastheadLogo = await drawLimurLogoPdf(doc, marginX, y, 30);
 
   doc.setFont('ArchSans', 'bold');
   doc.setFontSize(7.8);
   doc.setTextColor(15, 15, 15);
-  doc.text('ФИНАНСОВАЯ СВОДКА ПРОЕКТА', marginX + contentW, y + 5, {
+  doc.text('ФИНАНСОВАЯ СВОДКА ПРОЕКТА', marginX + contentW, y + 7.5, {
     align: 'right',
   });
 
   doc.setFont('ArchMono', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(82, 82, 82);
-  doc.text(`от ${todayFormatted}  ·  limurproject.ru`, marginX + contentW, y + 10.2, {
+  doc.text(`от ${todayFormatted}  ·  limurproject.ru`, marginX + contentW, y + 12.8, {
     align: 'right',
   });
 
@@ -575,7 +575,11 @@ export async function exportProjectFinancialPdf(project: ExportableProject): Pro
     doc.setFont('ArchSans', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(115, 115, 115);
-    doc.text(`LIMUR PROJECT  ·  limurproject.ru  ·  Отчёт для заказчика от ${todayFormatted}`, marginX, footerY);
+    doc.text(
+      `LI.MUR PROJECT  ·  limurproject.ru  ·  Отчёт для заказчика от ${todayFormatted}`,
+      marginX,
+      footerY
+    );
 
     doc.setFont('ArchMono', 'normal');
     doc.setFontSize(7.5);

@@ -1181,7 +1181,7 @@ export const ProposalBuilderView: React.FC<ProposalBuilderViewProps> = ({
             <header className="kp-print-avoid-break border-b-2 border-[#0A0A0A] pb-5">
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div>
-                  <LimurLogo className="h-12 w-auto shrink-0 sm:h-14" />
+                  <LimurLogo className="h-16 w-auto shrink-0 sm:h-20" />
                   <div className="mt-2 text-xs text-[#525252]">
                     Студия архитектуры и дизайна интерьера · limurproject.ru
                   </div>
@@ -1481,7 +1481,7 @@ export const ProposalBuilderView: React.FC<ProposalBuilderViewProps> = ({
             <footer className="kp-print-avoid-break mt-9 border-t-2 border-[#0A0A0A] pt-5">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
-                  <LimurLogo className="h-9 w-auto shrink-0" />
+                  <LimurLogo className="h-12 w-auto shrink-0" />
                   <div className="mt-2 text-[11px] text-[#525252]">
                     Архитектурное проектирование и дизайн интерьеров
                   </div>
