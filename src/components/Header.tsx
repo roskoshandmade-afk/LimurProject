@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Link2, Plus, Menu, X, Database } from 'lucide-react';
+import { Link2, Plus, Menu, X, Database, Smartphone } from 'lucide-react';
 import { UserRole } from '../types';
 import { SyncStatus } from '../utils/supabaseSync';
-import { PWAInstallButton } from './PWAInstallButton';
 import { LimurLogo } from './LimurLogo';
 
 export type WorkspaceTab = 'projects' | 'proposals' | 'worklog' | 'team';
@@ -19,6 +18,7 @@ interface HeaderProps {
   activeTab: WorkspaceTab;
   selectedProjectName?: string;
   canCopyClientLink: boolean;
+  showInstallButton?: boolean;
   syncStatus: SyncStatus;
   hasPendingChanges?: boolean;
   pendingCount?: number;
@@ -27,6 +27,7 @@ interface HeaderProps {
   onTabChange: (tab: WorkspaceTab) => void;
   onOpenNewProject: () => void;
   onCopyClientLink: () => void;
+  onRequestInstallApp?: () => void;
   onOpenBackup: () => void;
   onOpenSupabaseSettings: () => void;
   onGoHome: () => void;
@@ -122,6 +123,7 @@ export const Header: React.FC<HeaderProps> = ({
   role,
   activeTab,
   canCopyClientLink,
+  showInstallButton = false,
   syncStatus,
   hasPendingChanges = false,
   pendingCount = 0,
@@ -130,6 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
   onTabChange,
   onOpenNewProject,
   onCopyClientLink,
+  onRequestInstallApp,
   onOpenBackup,
   onOpenSupabaseSettings,
   onGoHome,
@@ -140,13 +143,13 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="no-print sticky top-0 z-30 border-b border-[#0A0A0A] bg-white">
       {/* Primary Top Bar */}
       <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        {/* Zone 1: Brand Wordmark + Live Sync Status */}
+        {/* Zone 1: Brand Logo + Live Sync Status */}
         <div className="flex items-center gap-3.5 shrink-0">
           <button
             type="button"
             onClick={onGoHome}
             className="flex shrink-0 items-center transition-opacity hover:opacity-80"
-            aria-label="LIMUR PROJECT — на главную"
+            aria-label="LI.MUR PROJECT — на главную"
           >
             <LimurLogo className="h-9 w-auto shrink-0" />
           </button>
@@ -226,7 +229,17 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          <PWAInstallButton />
+          {showInstallButton && onRequestInstallApp && (
+            <button
+              type="button"
+              onClick={onRequestInstallApp}
+              className="flex h-9 items-center gap-1.5 border border-[#0A0A0A] bg-white px-2.5 text-xs font-medium text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white whitespace-nowrap shrink-0"
+              title="Установить приложение LI.MUR PROJECT на телефон или ПК"
+            >
+              <Smartphone className="h-3.5 w-3.5" />
+              <span className="hidden xl:inline">На телефон</span>
+            </button>
+          )}
 
           {role !== 'client' && (
             <button
@@ -242,6 +255,18 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile / Tablet compact controls (flex lg:hidden) */}
         <div className="flex items-center gap-2 lg:hidden">
+          {showInstallButton && onRequestInstallApp && (
+            <button
+              type="button"
+              onClick={onRequestInstallApp}
+              className="flex h-9 items-center gap-1 border border-[#0A0A0A] bg-white px-2.5 text-xs font-medium text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white whitespace-nowrap shrink-0"
+              title="Скачать приложение на телефон"
+              aria-label="Скачать приложение на телефон"
+            >
+              <Smartphone className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">На телефон</span>
+            </button>
+          )}
           {role !== 'client' && (
             <button
               type="button"
@@ -338,12 +363,22 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               </div>
             )}
-            <div className="border-t border-[#D4D4D4] pt-3 empty:hidden">
-              <PWAInstallButton
-                fullWidth
-                onActionComplete={() => setMobileMenuOpen(false)}
-              />
-            </div>
+
+            {showInstallButton && onRequestInstallApp && (
+              <div className="border-t border-[#D4D4D4] pt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onRequestInstallApp();
+                  }}
+                  className="flex min-h-[42px] w-full items-center justify-center gap-2 border border-[#0A0A0A] bg-[#0A0A0A] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#262626]"
+                >
+                  <Smartphone className="h-3.5 w-3.5" />
+                  Скачать приложение на телефон
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

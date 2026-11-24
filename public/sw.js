@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-globals */
 
 const CACHE_PREFIX = 'limur-project-shell-';
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 const CORE_SHELL_PATHS = [

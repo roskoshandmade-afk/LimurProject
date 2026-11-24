@@ -1,15 +1,15 @@
 {
   "id": "./",
-  "name": "LIMUR PROJECT",
+  "name": "LI.MUR PROJECT",
   "short_name": "LI.MUR",
-  "description": "Система управления дизайн-проектами, коммерческими предложениями, сроками и финансами студии LIMUR PROJECT.",
+  "description": "Управление дизайн-проектами, сметами и финансами студии LI.MUR PROJECT",
   "lang": "ru",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "any",
-  "theme_color": "#0A0A0A",
+  "orientation": "portrait-primary",
   "background_color": "#FFFFFF",
+  "theme_color": "#0A0A0A",
   "icons": [
     {
       "src": "./pwa-192x192.png",

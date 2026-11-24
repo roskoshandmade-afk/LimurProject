@@ -3,6 +3,7 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 import { ClientView } from './components/ClientView';
 import { DataBackupModal } from './components/DataBackupModal';
 import { Header, WorkspaceTab } from './components/Header';
+import { InstallAppModal, MobileInstallBanner } from './components/InstallAppModal';
 import { ProjectDetailView } from './components/ProjectDetailView';
 import { ProjectModal } from './components/ProjectModal';
 import {
@@ -21,6 +22,7 @@ import {
   createId,
   createWorkStagesForScheme,
 } from './data/demoData';
+import { usePWAInstall } from './hooks/usePWAInstall';
 import {
   AppData,
   CommercialProposal,
@@ -128,6 +130,7 @@ export default function App() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [backupModalOpen, setBackupModalOpen] = useState(false);
   const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
+  const [installModalOpen, setInstallModalOpen] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -152,6 +155,32 @@ export default function App() {
       setToast((curr) => (curr && curr.id === id ? null : curr));
     }, 3400);
   }, []);
+
+  const {
+    canPromptNative,
+    isStandalone,
+    isIOS,
+    isAndroid,
+    bannerDismissed,
+    dismissBanner,
+    promptNativeInstall,
+  } = usePWAInstall({
+    onInstalled: () => {
+      setInstallModalOpen(false);
+      notify('Приложение LI.MUR PROJECT установлено');
+    },
+  });
+
+  const handleRequestInstallApp = useCallback(async () => {
+    if (canPromptNative) {
+      const outcome = await promptNativeInstall();
+      if (outcome === 'unavailable') {
+        setInstallModalOpen(true);
+      }
+      return;
+    }
+    setInstallModalOpen(true);
+  }, [canPromptNative, promptNativeInstall]);
 
   const clearRetryTimer = useCallback(() => {
     if (retryTimerRef.current !== null) {
@@ -1159,12 +1188,17 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-[#0A0A0A]">
+    <div
+      className={`min-h-screen bg-white text-[#0A0A0A] ${
+        !isStandalone && !bannerDismissed ? 'pb-20 md:pb-0' : ''
+      }`}
+    >
       <Header
         role={role}
         activeTab={activeTab}
         selectedProjectName={selectedProject?.name}
         canCopyClientLink={data.projects.length > 0}
+        showInstallButton={!isStandalone}
         syncStatus={syncStatus}
         hasPendingChanges={syncMeta.hasPendingChanges}
         pendingCount={syncMeta.pendingCount}
@@ -1186,6 +1220,9 @@ export default function App() {
           setProjectModalOpen(true);
         }}
         onCopyClientLink={() => handleCopyClientLink()}
+        onRequestInstallApp={() => {
+          void handleRequestInstallApp();
+        }}
         onOpenBackup={() => setBackupModalOpen(true)}
         onOpenSupabaseSettings={() => setSupabaseModalOpen(true)}
         onGoHome={() => {
@@ -1354,6 +1391,25 @@ export default function App() {
           onConfigApplied={() => setSyncGeneration((g) => g + 1)}
           onForcePushLocalToCloud={handleForcePushLocalToCloud}
           onNotify={notify}
+        />
+
+        <InstallAppModal
+          open={installModalOpen && !isStandalone}
+          isIOS={isIOS}
+          isAndroid={isAndroid}
+          canPromptNative={canPromptNative}
+          onTriggerNativeInstall={() => {
+            void promptNativeInstall();
+          }}
+          onClose={() => setInstallModalOpen(false)}
+        />
+
+        <MobileInstallBanner
+          visible={!isStandalone && !bannerDismissed}
+          onInstall={() => {
+            void handleRequestInstallApp();
+          }}
+          onDismiss={dismissBanner}
         />
 
         <ConfirmDialog
